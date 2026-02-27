@@ -165,18 +165,18 @@
                     performanceData = JSON.parse(data.files["data.json"].content);
                 } else { throw new Error(); }
             } catch (e) {
-                // ANALYZED: We must map local data.js properties to Excel-style keys used in your drilldown functions
-                if (typeof retailerData !== 'undefined') {
-                    performanceData = Object.keys(retailerData).map(id => ({
+                // FIXED: Use typeof check to prevent crash if data.js is slow
+                if (typeof window.retailerData !== 'undefined') {
+                    performanceData = Object.keys(window.retailerData).map(id => ({
                         'Bizom ID': id,
-                        'Shop Name': retailerData[id].name,
-                        'Target': retailerData[id].target,
-                        'Total Sales': retailerData[id].balance,
-                        '6mg': retailerData[id]['6mg'] || 0,
-                        '10mg': retailerData[id]['10mg'] || 0,
-                        '14mg': retailerData[id]['14mg'] || 0,
-                        '17mg': retailerData[id]['17mg'] || 0,
-                        'Market': "Kasur" // Ensures local data appears in the Kasur menu
+                        'Shop Name': window.retailerData[id].name,
+                        'Target': window.retailerData[id].target,
+                        'Total Sales': window.retailerData[id].balance,
+                        '6mg': window.retailerData[id]['6mg'] || 0,
+                        '10mg': window.retailerData[id]['10mg'] || 0,
+                        '14mg': window.retailerData[id]['14mg'] || 0,
+                        '17mg': window.retailerData[id]['17mg'] || 0,
+                        'Market': "Kasur"
                     }));
                 }
             }
@@ -293,3 +293,87 @@
             }).join('') : `<div class="text-center p-12 bg-slate-900/50 rounded-[2rem] border border-dashed border-slate-800"><p class="text-slate-500 font-bold uppercase text-[10px] tracking-widest">No Retailers Found in ${mName}</p></div>`;
             lucide.createIcons();
         }
+
+        function openDrilldown(bizId) {
+            const r = performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
+            if(!r) return;
+            const name = getExcelVal(r, 'Shop Name'), target = parseFloat(getExcelVal(r, 'Target')) || 0, actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
+            const daysLeft = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate() || 1;
+            const rrr = ((target - actual) / daysLeft).toFixed(1);
+            document.getElementById('detailModal').classList.remove('hidden');
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6 text-center md:text-left">
+                    <div>
+                        <h2 class="text-4xl md:text-6xl font-800 text-white italic tracking-tighter uppercase mb-4">${name}</h2>
+                        <div class="flex flex-wrap justify-center md:justify-start gap-3">
+                            <span class="px-6 py-2 bg-slate-800 rounded-full text-[11px] font-bold text-slate-400 uppercase tracking-widest border border-slate-700">BIZOM ID: ${bizId}</span>
+                            <button id="qrGenBtn" onclick="generateQR('${bizId}')" class="px-6 py-2 bg-blue-600/10 hover:bg-blue-600/20 rounded-full text-[11px] font-bold text-blue-400 uppercase tracking-widest border border-blue-500/30 transition-all flex items-center gap-2">Generate Share Link <i data-lucide="qr-code" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                    <div class="text-center bg-[#111419] p-8 rounded-[2.5rem] border border-white/5 min-w-[180px]"><span class="text-[10px] text-slate-500 font-bold uppercase block mb-2">Achievement</span><p class="text-5xl font-800 text-white tracking-tighter">${Math.round((actual/target)*100) || 0}<span class="text-xl text-blue-500">%</span></p></div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Target</span><p class="text-2xl font-800">${target}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Actual</span><p class="text-2xl font-800 text-emerald-500">${actual}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Daily RRR</span><p class="text-2xl font-800 text-slate-300">${rrr > 0 ? rrr : 0}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Deficit</span><p class="text-2xl font-800 text-rose-500">${target - actual > 0 ? Math.round(target-actual) : 0}</p></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="skuChart"></canvas></div></div>
+                    <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="drillChart"></canvas></div></div>
+                </div>`;
+            const skus = ['6mg', '10mg', '14mg', '17mg'];
+            new Chart(document.getElementById('skuChart'), {
+                type: 'bar',
+                data: { labels: skus, datasets: [{ data: skus.map(s => parseFloat(getExcelVal(r, s)) || 0), backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+            });
+            new Chart(document.getElementById('drillChart'), {
+                type: 'bar',
+                data: { labels: ['TGT', 'ACT'], datasets: [{ data: [target, actual], backgroundColor: ['#1e232d', '#10b981'], borderRadius: 15 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { display: false } } } }
+            });
+            lucide.createIcons();
+        }
+
+        function generateQR(bizId) {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?bizid=${bizId}`;
+            navigator.clipboard.writeText(shareUrl);
+            alert("Retailer Access Link Copied to Clipboard!");
+        }
+
+        function checkRetailerAccess() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const retailerId = urlParams.get('bizid');
+            if (retailerId) {
+                const checkData = setInterval(() => {
+                    if (performanceData.length > 0) {
+                        clearInterval(checkData);
+                        renderRetailerOnlyView(retailerId);
+                    }
+                }, 500);
+            }
+        }
+
+        function renderRetailerOnlyView(bizId) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('appHeader').style.display = 'none';
+            document.getElementById('filterControls').style.display = 'none';
+            openDrilldown(bizId);
+            const modalHeader = document.getElementById('modalHeader');
+            if(modalHeader) modalHeader.style.display = 'none';
+            const qrBtn = document.getElementById('qrGenBtn');
+            if(qrBtn) qrBtn.style.display = 'none';
+            document.getElementById('modalBody').style.border = "2px solid rgba(59, 130, 246, 0.5)";
+        }
+
+        function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
+        function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+        function filterShops() {
+            const term = document.getElementById('shopSearch').value.toLowerCase();
+            Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
+        }
+    </script>
+</body>
+</html>
