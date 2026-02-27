@@ -71,7 +71,7 @@
     </div>
 
     <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0f1115] flex items-center justify-center p-6">
-        <div class="w-full max-md p-10 rounded-[2rem] bg-[#1a1d23] border border-slate-800 shadow-2xl text-center">
+        <div class="w-full max-w-md p-10 rounded-[2rem] bg-[#1a1d23] border border-slate-800 shadow-2xl text-center">
             <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
                 <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
             </div>
@@ -151,9 +151,28 @@
             const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
             document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || 1} Days Left`;
-            await syncFromCloud();
+            
+            // 1. Initial Icon Setup
             lucide.createIcons();
-            checkRetailerAccess();
+
+            // 2. Immediate URL Check for Retailer View (Skip Login)
+            const urlParams = new URLSearchParams(window.location.search);
+            const retailerId = urlParams.get('bizid');
+            if (retailerId) {
+                // Instantly hide login screen
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').classList.remove('hidden');
+                document.getElementById('appHeader').style.display = 'none';
+                document.getElementById('filterControls').style.display = 'none';
+            }
+
+            // 3. Sync from cloud
+            await syncFromCloud();
+
+            // 4. If ID was present, render view now that data is loaded
+            if (retailerId) {
+                checkRetailerAccess();
+            }
         };
 
         async function syncFromCloud() {
@@ -161,7 +180,20 @@
                 const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`);
                 const data = await res.json();
                 performanceData = JSON.parse(data.files["data.json"].content);
-            } catch (e) {}
+            } catch (e) {
+                console.error("Sync Error", e);
+                // Fallback to local data.js if exists
+                if (typeof retailerData !== 'undefined') {
+                   Object.keys(retailerData).forEach(id => {
+                       performanceData.push({
+                           'Bizom ID': id,
+                           'Shop Name': retailerData[id].name,
+                           'Target': retailerData[id].target || 0,
+                           'Total Sales': retailerData[id].balance || 0
+                       });
+                   });
+                }
+            }
         }
 
         async function pushToCloud(data) {
@@ -325,13 +357,12 @@
         }
 
         function generateAndShowQR(bizId) {
-            const currentUrl = window.location.href.split('?')[0]; // Gets your base URL
+            const currentUrl = window.location.href.split('?')[0]; 
             const retailerUrl = `${currentUrl}?bizid=${bizId}`;
             const qrImg = document.getElementById('qrImg');
             const qrDisplay = document.getElementById('qrDisplay');
             const genBtn = document.getElementById('qrGenBtn');
             
-            // Generate QR via GoQR API
             qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(retailerUrl)}`;
             
             qrImg.onload = () => {
@@ -349,7 +380,7 @@
                         clearInterval(checkData);
                         renderRetailerOnlyView(retailerId);
                     }
-                }, 500);
+                }, 100); // Check faster
             }
         }
 
@@ -359,10 +390,11 @@
             document.getElementById('appHeader').style.display = 'none';
             document.getElementById('filterControls').style.display = 'none';
             openDrilldown(bizId);
+            
             const modalHeader = document.getElementById('modalHeader');
             if(modalHeader) modalHeader.style.display = 'none';
             const qrBtn = document.getElementById('qrGenBtn');
-            if(qrBtn) qrBtn.style.display = 'none'; // Hide QR button from retailer
+            if(qrBtn) qrBtn.style.display = 'none'; 
             document.getElementById('modalBody').style.border = "2px solid rgba(59, 130, 246, 0.5)";
         }
 
