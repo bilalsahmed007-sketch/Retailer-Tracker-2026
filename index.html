@@ -165,18 +165,18 @@
                     performanceData = JSON.parse(data.files["data.json"].content);
                 } else { throw new Error(); }
             } catch (e) {
-                // FIXED FALLBACK: Use window.retailerData to bypass const initialization issues
-                if (typeof window.retailerData !== 'undefined') {
-                    performanceData = Object.keys(window.retailerData).map(id => ({
+                // ANALYZED: We must map local data.js properties to Excel-style keys used in your drilldown functions
+                if (typeof retailerData !== 'undefined') {
+                    performanceData = Object.keys(retailerData).map(id => ({
                         'Bizom ID': id,
-                        'Shop Name': window.retailerData[id].name,
-                        'Target': window.retailerData[id].target,
-                        'Total Sales': window.retailerData[id].balance,
-                        '6mg': window.retailerData[id]['6mg'] || 0,
-                        '10mg': window.retailerData[id]['10mg'] || 0,
-                        '14mg': window.retailerData[id]['14mg'] || 0,
-                        '17mg': window.retailerData[id]['17mg'] || 0,
-                        'Market': "Kasur"
+                        'Shop Name': retailerData[id].name,
+                        'Target': retailerData[id].target,
+                        'Total Sales': retailerData[id].balance,
+                        '6mg': retailerData[id]['6mg'] || 0,
+                        '10mg': retailerData[id]['10mg'] || 0,
+                        '14mg': retailerData[id]['14mg'] || 0,
+                        '17mg': retailerData[id]['17mg'] || 0,
+                        'Market': "Kasur" // Ensures local data appears in the Kasur menu
                     }));
                 }
             }
@@ -293,21 +293,3 @@
             }).join('') : `<div class="text-center p-12 bg-slate-900/50 rounded-[2rem] border border-dashed border-slate-800"><p class="text-slate-500 font-bold uppercase text-[10px] tracking-widest">No Retailers Found in ${mName}</p></div>`;
             lucide.createIcons();
         }
-
-        function openDrilldown(bizId) {
-            const r = performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
-            if(!r) return;
-            const name = getExcelVal(r, 'Shop Name'), target = parseFloat(getExcelVal(r, 'Target')) || 0, actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
-            const daysLeft = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate() || 1;
-            const rrr = ((target - actual) / daysLeft).toFixed(1);
-            document.getElementById('detailModal').classList.remove('hidden');
-            document.getElementById('modalBody').innerHTML = `
-                <div class="flex flex-col md:flex-row justify-between items-center mb-12 gap-6 text-center md:text-left">
-                    <div>
-                        <h2 class="text-4xl md:text-6xl font-800 text-white italic tracking-tighter uppercase mb-4">${name}</h2>
-                        <div class="flex flex-wrap justify-center md:justify-start gap-3">
-                            <span class="px-6 py-2 bg-slate-800 rounded-full text-[11px] font-bold text-slate-400 uppercase tracking-widest border border-slate-700">BIZOM ID: ${bizId}</span>
-                            <button id="qrGenBtn" onclick="generateQR('${bizId}')" class="px-6 py-2 bg-blue-600/10 hover:bg-blue-600/20 rounded-full text-[11px] font-bold text-blue-400 uppercase tracking-widest border border-blue-500/30 transition-all flex items-center gap-2">Generate Share Link <i data-lucide="qr-code" class="w-3.5 h-3.5"></i></button>
-                        </div>
-                    </div>
-                    <div class="text-center bg-[#111419] p-8 rounded-
