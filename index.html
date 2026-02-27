@@ -50,10 +50,7 @@
             color: #f8fafc;
         }
 
-        .status-glow-red { border-left: 6px solid #ef4444 !important; }
         .status-glow-green { border-left: 6px solid #10b981 !important; }
-        .status-glow-yellow { border-left: 6px solid #f59e0b !important; }
-        
         .sync-success { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #10b981 !important; }
         .sync-error { background: rgba(244, 63, 94, 0.1) !important; border-color: rgba(244, 63, 94, 0.3) !important; color: #f43f5e !important; }
     </style>
@@ -75,10 +72,8 @@
     </div>
 
     <div id="mainApp" class="hidden max-w-6xl mx-auto">
-        <header id="appHeader" class="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
-            <div>
-                <h1 class="text-4xl md:text-5xl font-800 italic uppercase tracking-tighter text-white">Retailer <span class="text-slate-500">Intelligence</span></h1>
-            </div>
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
+            <h1 class="text-4xl md:text-5xl font-800 italic uppercase tracking-tighter text-white">Retailer <span class="text-slate-500">Intelligence</span></h1>
             <div id="syncBtnContainer" onclick="document.getElementById('fileInput').click()" class="glass px-6 py-4 rounded-2xl cursor-pointer flex items-center gap-4 border border-white/5">
                 <i id="syncIcon" data-lucide="refresh-ccw" class="w-5 h-5 text-blue-400"></i>
                 <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Sync Dataset</span>
@@ -101,18 +96,14 @@
                 <p class="text-slate-700 font-800 uppercase text-xs tracking-[0.4em]">Awaiting Selection</p>
             </div>
             <section id="territorySection" class="hidden"><div id="territoryGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div></section>
-            <section id="marketSection" class="hidden">
-                <div id="marketGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div>
-            </section>
-            <section id="shopSection" class="hidden">
-                <div id="shopList" class="grid gap-3"></div>
-            </section>
+            <section id="marketSection" class="hidden"><div id="marketGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div></section>
+            <section id="shopSection" class="hidden"><div id="shopList" class="grid gap-3"></div></section>
         </main>
     </div>
 
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div id="modalHeader" class="flex justify-end mb-8"><button onclick="closeModal()" class="text-slate-400 uppercase font-bold text-xs tracking-widest">CLOSE [X]</button></div>
+            <div class="flex justify-end mb-8"><button onclick="closeModal()" class="text-slate-400 uppercase font-bold text-xs tracking-widest">CLOSE [X]</button></div>
             <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 border border-slate-800 shadow-2xl"></div>
         </div>
     </div>
@@ -122,31 +113,23 @@
         let performanceData = [];
         const hierarchyData = {"CPR":{"Lahore":{"Kasur":["Kasur"]}}};
 
-        window.onload = async () => {
-            await syncFromCloud();
-            lucide.createIcons();
-        };
+        window.onload = async () => { await syncFromCloud(); lucide.createIcons(); };
 
         async function syncFromCloud() {
             try {
-                const res = await fetch(`https://api.github.com/gists/${GIST_ID}`);
+                const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`);
                 if (res.ok) {
                     const data = await res.json();
                     performanceData = JSON.parse(data.files["data.json"].content);
                 } else { throw new Error(); }
             } catch (e) {
-                // FIXED: Direct mapping of your data.js.txt content
                 if (typeof retailerData !== 'undefined') {
                     performanceData = Object.keys(retailerData).map(id => ({
                         'Bizom ID': id,
                         'Shop Name': retailerData[id].name,
                         'Target': retailerData[id].target,
                         'Total Sales': retailerData[id].balance,
-                        'Market': 'Kasur',
-                        '6mg': retailerData[id]['6mg'] || 0,
-                        '10mg': retailerData[id]['10mg'] || 0,
-                        '14mg': retailerData[id]['14mg'] || 0,
-                        '17mg': retailerData[id]['17mg'] || 0
+                        'Market': 'Kasur'
                     }));
                 }
             }
