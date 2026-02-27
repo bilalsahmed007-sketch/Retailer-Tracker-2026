@@ -29,37 +29,28 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
+        /* FIX: Added pointer events and hover states */
+        .clickable-btn { 
+            cursor: pointer !important; 
+            transition: all 0.2s ease; 
+            pointer-events: auto !important;
+            user-select: none;
+        }
+        .clickable-btn:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+        .clickable-btn:active { transform: scale(0.95); }
+
         .white-card { 
             background: #ffffff;
             color: #1a1d23; 
             border-radius: 1.5rem; 
             transition: all 0.3s ease; 
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        .white-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); }
-
-        .input-field { 
-            background: #1e232d; 
-            border: 1px solid #334155; 
-            border-radius: 1rem; 
-            padding: 1.15rem; 
-            width: 100%; 
-            outline: none; 
-            color: #f8fafc;
-        }
-
-        .status-glow-red { border-left: 6px solid #ef4444 !important; }
         .status-glow-green { border-left: 6px solid #10b981 !important; }
+        .status-glow-red { border-left: 6px solid #ef4444 !important; }
 
-        /* Added cursor pointer to show it is clickable */
-        .sync-btn { cursor: pointer; transition: all 0.2s ease; }
-        .sync-btn:active { scale: 0.95; }
-        .sync-success { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #10b981 !important; }
-
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .sync-active { color: #10b981 !important; border-color: rgba(16, 185, 129, 0.3) !important; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -71,8 +62,8 @@
             </div>
             <h2 class="text-3xl font-800 text-white italic uppercase mb-8 tracking-tighter">Secure <span class="text-slate-500">Access</span></h2>
             <div class="space-y-4">
-                <input type="text" id="userInput" placeholder="Identity" class="input-field text-sm font-semibold">
-                <input type="password" id="passInput" placeholder="Passcode" class="input-field text-sm font-semibold">
+                <input type="text" id="userInput" placeholder="Identity" class="w-full bg-[#1e232d] border border-slate-700 p-4 rounded-xl text-white outline-none">
+                <input type="password" id="passInput" placeholder="Passcode" class="w-full bg-[#1e232d] border border-slate-700 p-4 rounded-xl text-white outline-none">
                 <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-800 uppercase text-xs tracking-widest transition-all">Authenticate</button>
             </div>
         </div>
@@ -87,18 +78,19 @@
                     <span class="flex items-center gap-2"><i data-lucide="timer" class="w-4 h-4 text-rose-500"></i> <span id="topDaysLeft">-- Days Left</span></span>
                 </div>
             </div>
-            <div id="syncBtnContainer" onclick="refreshData()" class="glass sync-btn px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 shadow-xl">
+            
+            <div id="syncBtnContainer" onclick="forceRefreshData()" class="glass clickable-btn px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 shadow-xl">
                 <i id="syncIcon" data-lucide="refresh-cw" class="w-5 h-5 text-blue-400"></i>
                 <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Refresh Data</span>
             </div>
         </header>
 
         <div id="filterControls" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-            <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs tracking-widest">
+            <select id="regionSelect" onchange="updateAreas()" class="bg-[#1e232d] border border-slate-700 p-4 rounded-xl text-white outline-none font-bold uppercase text-xs">
                 <option value="">Select Region</option>
                 <option value="CPR">CPR (Central)</option>
             </select>
-            <select id="areaSelect" onchange="renderTerritoryView()" disabled class="input-field font-bold uppercase text-xs tracking-widest opacity-40">
+            <select id="areaSelect" onchange="renderTerritoryView()" disabled class="bg-[#1e232d] border border-slate-700 p-4 rounded-xl text-white outline-none font-bold uppercase text-xs opacity-40">
                 <option value="">Select Area Cluster</option>
             </select>
         </div>
@@ -116,7 +108,7 @@
             <section id="shopSection" class="hidden">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
                     <button onclick="showMarkets()" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back</button>
-                    <input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass border-slate-700 rounded-full px-6 py-2 text-xs font-bold w-full md:w-64 text-white">
+                    <input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass border-slate-700 rounded-full px-6 py-2 text-xs font-bold w-full md:w-64 text-white outline-none">
                 </div>
                 <div id="shopList" class="grid gap-3"></div>
             </section>
@@ -125,7 +117,9 @@
 
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div id="modalHeader" class="flex justify-end mb-8"><button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE <i data-lucide="x" class="w-5 h-5"></i></button></div>
+            <div id="modalHeader" class="flex justify-end mb-8">
+                <button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE <i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
             <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
         </div>
     </div>
@@ -139,47 +133,41 @@
             document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
             document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || 1} Days Left`;
             
-            refreshData(); // Run initial load
+            forceRefreshData(); // Run initial load
             lucide.createIcons();
             checkRetailerAccess();
         };
 
-        // NEW: This function handles the click on the "Refresh Data" button
-        function refreshData() {
+        // THE BUTTON LOGIC
+        function forceRefreshData() {
             const icon = document.getElementById('syncIcon');
             const text = document.getElementById('syncText');
-            const btn = document.getElementById('syncBtnContainer');
+            const container = document.getElementById('syncBtnContainer');
             
-            // Animation start
             icon.classList.add('animate-spin');
             text.innerText = "Syncing...";
 
+            // Connect to data.js
             if (typeof retailerData !== 'undefined') {
-                // Bridge data from data.js (mapping balance to Total Sales)
                 performanceData = Object.keys(retailerData).map(id => ({
                     'Bizom ID': id,
                     'Shop Name': retailerData[id].name,
                     'Target': retailerData[id].target,
-                    'Total Sales': retailerData[id].balance, 
+                    'Total Sales': retailerData[id].balance, // Map balance to Total Sales
                     '6mg': retailerData[id]['6mg'],
                     '10mg': retailerData[id]['10mg'],
                     '14mg': retailerData[id]['14mg'],
                     '17mg': retailerData[id]['17mg']
                 }));
 
-                // Simulation delay for feel
                 setTimeout(() => {
                     icon.classList.remove('animate-spin');
                     text.innerText = "Data Connected";
-                    btn.classList.add('sync-success');
-                    
-                    // If shop list is already open, refresh it
-                    if(!document.getElementById('shopSection').classList.contains('hidden')) {
-                        showShops();
-                    }
-                }, 800);
+                    container.classList.add('sync-active');
+                    if(!document.getElementById('shopSection').classList.contains('hidden')) showShops();
+                }, 600);
             } else {
-                alert("Critical Error: data.js file not linked or loaded!");
+                alert("data.js not found!");
             }
         }
 
@@ -200,13 +188,13 @@
 
         function renderTerritoryView() {
             hideAll(); document.getElementById('territorySection').classList.remove('hidden');
-            document.getElementById('territoryGrid').innerHTML = `<div onclick="showMarkets()" class="white-card p-10 h-44 flex flex-col justify-center text-center"><i data-lucide="map-pinned" class="w-8 h-8 text-blue-500 mx-auto mb-4"></i><h4 class="text-xl font-800 uppercase italic tracking-tighter">Central Punjab</h4></div>`;
+            document.getElementById('territoryGrid').innerHTML = `<div onclick="showMarkets()" class="white-card p-10 h-44 flex flex-col justify-center text-center"><i data-lucide="map-pinned" class="w-8 h-8 text-blue-500 mx-auto mb-4"></i><h4 class="text-xl font-800 uppercase italic tracking-tighter">Central Region</h4></div>`;
             lucide.createIcons();
         }
 
         function showMarkets() {
             hideAll(); document.getElementById('marketSection').classList.remove('hidden');
-            document.getElementById('marketGrid').innerHTML = `<div onclick="showShops()" class="white-card p-6 h-32 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">Lahore DHA</h4></div>`;
+            document.getElementById('marketGrid').innerHTML = `<div onclick="showShops()" class="white-card p-6 h-32 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">Lahore Cluster</h4></div>`;
         }
 
         function showShops() {
