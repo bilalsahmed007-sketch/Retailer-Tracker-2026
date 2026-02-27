@@ -52,7 +52,6 @@
 
         .status-glow-red { border-left: 6px solid #ef4444 !important; }
         .status-glow-green { border-left: 6px solid #10b981 !important; }
-        .status-glow-yellow { border-left: 6px solid #f59e0b !important; }
 
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -84,8 +83,8 @@
                 </div>
             </div>
             <div id="syncBtnContainer" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all">
-                <i id="syncIcon" data-lucide="refresh-ccw" class="w-5 h-5 text-blue-400"></i>
-                <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Data Connected</span>
+                <i data-lucide="database" class="w-5 h-5 text-blue-400"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Data.js Loaded</span>
             </div>
         </header>
 
@@ -111,8 +110,8 @@
             </section>
             <section id="shopSection" class="hidden">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-                    <button onclick="showMarkets(currentTerritory)" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back to Markets</button>
-                    <div class="relative w-full md:w-64"><i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400"></i><input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass !bg-transparent border-slate-700 rounded-full pl-10 pr-6 py-2 text-xs font-bold w-full text-white"></div>
+                    <button onclick="showMarkets()" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back</button>
+                    <input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass border-slate-700 rounded-full px-6 py-2 text-xs font-bold w-full md:w-64 text-white">
                 </div>
                 <div id="shopList" class="grid gap-3"></div>
             </section>
@@ -121,40 +120,33 @@
 
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div id="modalHeader" class="flex justify-end mb-8"><button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE VIEW <i data-lucide="x" class="w-5 h-5"></i></button></div>
+            <div id="modalHeader" class="flex justify-end mb-8"><button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE <i data-lucide="x" class="w-5 h-5"></i></button></div>
             <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
         </div>
     </div>
 
     <script>
         let performanceData = [];
-        let currentTerritory = '';
-
-        // Internal mapping to fix "Market" logic since your data.js doesn't have it
-        const hierarchyData = {"CPR":{"Lahore":{"DHA":["DHA"]}}};
-
+        
         window.onload = () => {
             const now = new Date();
             const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
             document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || 1} Days Left`;
             
-            // BRIDGE: Transform your data.js object into the array format the script expects
+            // TRANSLATION LOGIC: Convert data.js object into the format the script needs
             if (typeof retailerData !== 'undefined') {
                 performanceData = Object.keys(retailerData).map(id => ({
                     'Bizom ID': id,
                     'Shop Name': retailerData[id].name,
                     'Target': retailerData[id].target,
-                    'Total Sales': retailerData[id].balance, // Maps balance to Total Sales
+                    'Total Sales': retailerData[id].balance, // CRITICAL FIX: Mapping balance to Total Sales
                     '6mg': retailerData[id]['6mg'],
                     '10mg': retailerData[id]['10mg'],
                     '14mg': retailerData[id]['14mg'],
-                    '17mg': retailerData[id]['17mg'],
-                    'Market': 'DHA' // Force link to DHA for your test stores
+                    '17mg': retailerData[id]['17mg']
                 }));
-                document.getElementById('syncBtnContainer').classList.add('sync-success');
             }
-
             lucide.createIcons();
             checkRetailerAccess();
         };
@@ -176,87 +168,59 @@
 
         function renderTerritoryView() {
             hideAll(); document.getElementById('territorySection').classList.remove('hidden');
-            document.getElementById('territoryGrid').innerHTML = `<div onclick="showMarkets('DHA')" class="white-card p-10 h-44 flex flex-col justify-center text-center"><i data-lucide="map-pinned" class="w-8 h-8 text-blue-500 mx-auto mb-4"></i><h4 class="text-xl font-800 uppercase italic tracking-tighter">DHA</h4></div>`;
+            document.getElementById('territoryGrid').innerHTML = `<div onclick="showMarkets()" class="white-card p-10 h-44 flex flex-col justify-center text-center"><i data-lucide="map-pinned" class="w-8 h-8 text-blue-500 mx-auto mb-4"></i><h4 class="text-xl font-800 uppercase italic tracking-tighter">DHA Region</h4></div>`;
             lucide.createIcons();
         }
 
-        function showMarkets(tName) {
-            currentTerritory = tName;
+        function showMarkets() {
             hideAll(); document.getElementById('marketSection').classList.remove('hidden');
-            document.getElementById('marketGrid').innerHTML = `<div onclick="showShops('DHA')" class="white-card p-6 h-32 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">DHA Market</h4></div>`;
+            document.getElementById('marketGrid').innerHTML = `<div onclick="showShops()" class="white-card p-6 h-32 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">Main Market</h4></div>`;
         }
 
-        function showShops(mName) {
-            hideAll();
-            document.getElementById('shopSection').classList.remove('hidden');
-            document.getElementById('shopList').innerHTML = performanceData.map(r => {
-                const target = r['Target'] || 0;
-                const actual = r['Total Sales'] || 0;
-                const status = actual >= (target/30)*new Date().getDate() ? 'status-glow-green' : 'status-glow-red';
-                return `
-                <div onclick="openDrilldown('${r['Bizom ID']}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${status}">
+        function showShops() {
+            hideAll(); document.getElementById('shopSection').classList.remove('hidden');
+            document.getElementById('shopList').innerHTML = performanceData.map(r => `
+                <div onclick="openDrilldown('${r['Bizom ID']}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${r['Total Sales'] >= r['Target'] ? 'status-glow-green' : 'status-glow-red'}">
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center"><i data-lucide="store" class="w-5 h-5 text-blue-600"></i></div>
-                        <div>
-                            <h4 class="text-sm font-800 text-slate-900 uppercase italic">${r['Shop Name']}</h4>
-                            <p class="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">BIZOM ID: ${r['Bizom ID']}</p>
-                        </div>
+                        <div><h4 class="text-sm font-800 text-slate-900 uppercase italic">${r['Shop Name']}</h4><p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">ID: ${r['Bizom ID']}</p></div>
                     </div>
                     <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300"></i>
-                </div>`}).join('');
+                </div>`).join('');
             lucide.createIcons();
         }
 
         function openDrilldown(bizId) {
             const r = performanceData.find(i => String(i['Bizom ID']) === String(bizId));
             if(!r) return;
-            const target = r['Target'];
-            const actual = r['Total Sales'];
-            const daysLeft = 30 - new Date().getDate() || 1;
-            const rrr = ((target - actual) / daysLeft).toFixed(1);
-            
+            const target = r['Target'], actual = r['Total Sales'];
+            const rrr = ((target - actual) / (30 - new Date().getDate() || 1)).toFixed(1);
+
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
                 <div class="text-center mb-12">
-                    <p class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.4em] mb-2">Retailer Analysis</p>
                     <h2 class="text-4xl md:text-6xl font-800 text-white italic tracking-tighter uppercase mb-4">${r['Shop Name']}</h2>
-                    <div class="inline-flex items-center gap-3 px-6 py-2 bg-slate-800/50 rounded-full border border-slate-700">
-                        <i data-lucide="fingerprint" class="w-4 h-4 text-blue-500"></i><span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">BIZOM ID: ${bizId}</span>
-                    </div>
+                    <span class="px-6 py-2 bg-slate-800 rounded-full text-[11px] font-bold text-slate-400 uppercase tracking-widest border border-slate-700">BIZOM ID: ${bizId}</span>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><i data-lucide="target" class="w-5 h-5 text-blue-500 mx-auto mb-3"></i><span class="text-[9px] text-slate-500 font-bold uppercase block">Target</span><p class="text-2xl font-800">${target}</p></div>
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><i data-lucide="trending-up" class="w-5 h-5 text-emerald-500 mx-auto mb-3"></i><span class="text-[9px] text-slate-500 font-bold uppercase block">Actual</span><p class="text-2xl font-800 text-emerald-500">${actual}</p></div>
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><i data-lucide="zap" class="w-5 h-5 text-amber-500 mx-auto mb-3"></i><span class="text-[9px] text-slate-500 font-bold uppercase block">Daily RRR</span><p class="text-2xl font-800 text-slate-300">${rrr}</p></div>
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><i data-lucide="alert-triangle" class="w-5 h-5 text-rose-500 mx-auto mb-3"></i><span class="text-[9px] text-slate-500 font-bold uppercase block">Deficit</span><p class="text-2xl font-800 text-rose-500">${(target-actual).toFixed(0)}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Target</span><p class="text-2xl font-800">${target}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Actual</span><p class="text-2xl font-800 text-emerald-500">${actual}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Daily RRR</span><p class="text-2xl font-800 text-slate-300">${rrr}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Deficit</span><p class="text-2xl font-800 text-rose-500">${target-actual}</p></div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="skuChart"></canvas></div></div>
                     <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="drillChart"></canvas></div></div>
                 </div>`;
             
-            new Chart(document.getElementById('skuChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['6mg','10mg','14mg','17mg'],
-                    datasets: [{ data: [r['6mg'],r['10mg'],r['14mg'],r['17mg']], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-            new Chart(document.getElementById('drillChart'), {
-                type: 'bar',
-                data: { labels: ['TGT', 'ACT'], datasets: [{ data: [target, actual], backgroundColor: ['#1e232d', '#10b981'], borderRadius: 15 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
+            new Chart(document.getElementById('skuChart'), { type: 'bar', data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [r['6mg'],r['10mg'],r['14mg'],r['17mg']], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            new Chart(document.getElementById('drillChart'), { type: 'bar', data: { labels: ['TGT', 'ACT'], datasets: [{ data: [target, actual], backgroundColor: ['#1e232d', '#10b981'], borderRadius: 15 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
             lucide.createIcons();
         }
 
         function checkRetailerAccess() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const retailerId = urlParams.get('bizid');
-            if (retailerId) {
-                setTimeout(() => renderRetailerOnlyView(retailerId), 500);
-            }
+            const bizId = new URLSearchParams(window.location.search).get('bizid');
+            if (bizId) setTimeout(() => renderRetailerOnlyView(bizId), 500);
         }
 
         function renderRetailerOnlyView(bizId) {
@@ -265,8 +229,7 @@
             document.getElementById('appHeader').style.display = 'none';
             document.getElementById('filterControls').style.display = 'none';
             openDrilldown(bizId);
-            const modalHeader = document.getElementById('modalHeader');
-            if(modalHeader) modalHeader.style.display = 'none';
+            document.getElementById('modalHeader').style.display = 'none';
             document.getElementById('modalBody').style.border = "2px solid rgba(59, 130, 246, 0.5)";
         }
 
