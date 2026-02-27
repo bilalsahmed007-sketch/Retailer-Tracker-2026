@@ -29,28 +29,33 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
-        /* FIX: Added pointer events and hover states */
-        .clickable-btn { 
-            cursor: pointer !important; 
-            transition: all 0.2s ease; 
-            pointer-events: auto !important;
-            user-select: none;
-        }
-        .clickable-btn:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
-        .clickable-btn:active { transform: scale(0.95); }
-
         .white-card { 
             background: #ffffff;
             color: #1a1d23; 
             border-radius: 1.5rem; 
             transition: all 0.3s ease; 
             cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        .status-glow-green { border-left: 6px solid #10b981 !important; }
-        .status-glow-red { border-left: 6px solid #ef4444 !important; }
+        .white-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); }
 
-        .sync-active { color: #10b981 !important; border-color: rgba(16, 185, 129, 0.3) !important; }
+        .input-field { 
+            background: #1e232d; 
+            border: 1px solid #334155; 
+            border-radius: 1rem; 
+            padding: 1.15rem; 
+            width: 100%; 
+            outline: none; 
+            color: #f8fafc;
+        }
+
+        .status-glow-red { border-left: 6px solid #ef4444 !important; }
+        .status-glow-green { border-left: 6px solid #10b981 !important; }
+        .sync-success { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #10b981 !important; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -60,10 +65,10 @@
             <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
                 <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
             </div>
-            <h2 class="text-3xl font-800 text-white italic uppercase mb-8 tracking-tighter">Secure <span class="text-slate-500">Access</span></h2>
+            [cite_start]<h2 class="text-3xl font-800 text-white italic uppercase mb-8 tracking-tighter">Secure <span class="text-slate-500">Access</span> [cite: 17]</h2>
             <div class="space-y-4">
-                <input type="text" id="userInput" placeholder="Identity" class="w-full bg-[#1e232d] border border-slate-700 p-4 rounded-xl text-white outline-none">
-                <input type="password" id="passInput" placeholder="Passcode" class="w-full bg-[#1e232d] border border-slate-700 p-4 rounded-xl text-white outline-none">
+                <input type="text" id="userInput" placeholder="Identity" class="input-field text-sm font-semibold">
+                <input type="password" id="passInput" placeholder="Passcode" class="input-field text-sm font-semibold">
                 <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-800 uppercase text-xs tracking-widest transition-all">Authenticate</button>
             </div>
         </div>
@@ -78,19 +83,18 @@
                     <span class="flex items-center gap-2"><i data-lucide="timer" class="w-4 h-4 text-rose-500"></i> <span id="topDaysLeft">-- Days Left</span></span>
                 </div>
             </div>
-            
-            <div id="syncBtnContainer" onclick="forceRefreshData()" class="glass clickable-btn px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 shadow-xl">
+            <div id="syncBtnContainer" onclick="refreshData()" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all cursor-pointer hover:bg-white/5 active:scale-95">
                 <i id="syncIcon" data-lucide="refresh-cw" class="w-5 h-5 text-blue-400"></i>
-                <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Refresh Data</span>
+                [cite_start]<span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Refresh Data</span> [cite: 20]
             </div>
         </header>
 
         <div id="filterControls" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-            <select id="regionSelect" onchange="updateAreas()" class="bg-[#1e232d] border border-slate-700 p-4 rounded-xl text-white outline-none font-bold uppercase text-xs">
+            <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs tracking-widest">
                 <option value="">Select Region</option>
                 <option value="CPR">CPR (Central)</option>
             </select>
-            <select id="areaSelect" onchange="renderTerritoryView()" disabled class="bg-[#1e232d] border border-slate-700 p-4 rounded-xl text-white outline-none font-bold uppercase text-xs opacity-40">
+            <select id="areaSelect" onchange="renderTerritoryView()" disabled class="input-field font-bold uppercase text-xs tracking-widest opacity-40">
                 <option value="">Select Area Cluster</option>
             </select>
         </div>
@@ -108,7 +112,7 @@
             <section id="shopSection" class="hidden">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
                     <button onclick="showMarkets()" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back</button>
-                    <input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass border-slate-700 rounded-full px-6 py-2 text-xs font-bold w-full md:w-64 text-white outline-none">
+                    <input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass border-slate-700 rounded-full px-6 py-2 text-xs font-bold w-full md:w-64 text-white">
                 </div>
                 <div id="shopList" class="grid gap-3"></div>
             </section>
@@ -117,9 +121,7 @@
 
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div id="modalHeader" class="flex justify-end mb-8">
-                <button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE <i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
+            <div id="modalHeader" class="flex justify-end mb-8"><button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE <i data-lucide="x" class="w-5 h-5"></i></button></div>
             <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
         </div>
     </div>
@@ -130,75 +132,82 @@
         window.onload = () => {
             const now = new Date();
             const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
-            document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || 1} Days Left`;
+            [cite_start]document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`; [cite: 28]
+            document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || [cite_start]1} Days Left`; [cite: 29]
             
-            forceRefreshData(); // Run initial load
+            refreshData(); [cite_start]// Sync data on load [cite: 30]
             lucide.createIcons();
             checkRetailerAccess();
         };
 
-        // THE BUTTON LOGIC
-        function forceRefreshData() {
+        [cite_start]// CORE: Function to fetch/refresh data from data.js [cite: 31]
+        function refreshData() {
             const icon = document.getElementById('syncIcon');
             const text = document.getElementById('syncText');
-            const container = document.getElementById('syncBtnContainer');
-            
-            icon.classList.add('animate-spin');
+            [cite_start]icon.classList.add('animate-spin'); [cite: 32]
             text.innerText = "Syncing...";
 
-            // Connect to data.js
             if (typeof retailerData !== 'undefined') {
                 performanceData = Object.keys(retailerData).map(id => ({
                     'Bizom ID': id,
                     'Shop Name': retailerData[id].name,
                     'Target': retailerData[id].target,
-                    'Total Sales': retailerData[id].balance, // Map balance to Total Sales
+                    [cite_start]'Total Sales': retailerData[id].balance, [cite: 33]
                     '6mg': retailerData[id]['6mg'],
                     '10mg': retailerData[id]['10mg'],
                     '14mg': retailerData[id]['14mg'],
-                    '17mg': retailerData[id]['17mg']
+                    [cite_start]'17mg': retailerData[id]['17mg'] [cite: 34]
                 }));
 
                 setTimeout(() => {
                     icon.classList.remove('animate-spin');
-                    text.innerText = "Data Connected";
-                    container.classList.add('sync-active');
-                    if(!document.getElementById('shopSection').classList.contains('hidden')) showShops();
-                }, 600);
+                    document.getElementById('syncBtnContainer').classList.add('sync-success');
+                    [cite_start]text.innerText = "Data Connected"; [cite: 35]
+                    [cite_start]if(!document.getElementById('shopSection').classList.contains('hidden')) showShops(); [cite: 36]
+                }, 800);
             } else {
-                alert("data.js not found!");
+                [cite_start]alert("data.js not found! Ensure data.js is in the same folder."); [cite: 37]
             }
         }
 
         function handleLogin() {
-            if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") {
+            const user = document.getElementById('userInput').value;
+            const pass = document.getElementById('passInput').value;
+
+            [cite_start]if(user === "admin" && pass === "51555777") { [cite: 38]
                 document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
+                [cite_start]document.getElementById('mainApp').classList.remove('hidden'); [cite: 39]
                 lucide.createIcons();
-            } else { alert("Invalid Credentials"); }
+            } else { 
+                alert("Invalid Credentials"); 
+            }
         }
 
         function updateAreas() {
             const areaSel = document.getElementById('areaSelect');
-            areaSel.innerHTML = '<option value="">Select Area Cluster</option><option value="Lahore">Lahore</option>';
-            areaSel.disabled = false; areaSel.classList.remove('opacity-40');
-            hideAll(); document.getElementById('emptyState').classList.remove('hidden');
+            [cite_start]areaSel.innerHTML = '<option value="">Select Area Cluster</option><option value="Lahore">Lahore</option>'; [cite: 40]
+            areaSel.disabled = false; 
+            areaSel.classList.remove('opacity-40');
+            hideAll(); 
+            document.getElementById('emptyState').classList.remove('hidden');
         }
 
         function renderTerritoryView() {
-            hideAll(); document.getElementById('territorySection').classList.remove('hidden');
+            hideAll();
+            [cite_start]document.getElementById('territorySection').classList.remove('hidden'); [cite: 42]
             document.getElementById('territoryGrid').innerHTML = `<div onclick="showMarkets()" class="white-card p-10 h-44 flex flex-col justify-center text-center"><i data-lucide="map-pinned" class="w-8 h-8 text-blue-500 mx-auto mb-4"></i><h4 class="text-xl font-800 uppercase italic tracking-tighter">Central Region</h4></div>`;
             lucide.createIcons();
         }
 
         function showMarkets() {
-            hideAll(); document.getElementById('marketSection').classList.remove('hidden');
+            hideAll();
+            [cite_start]document.getElementById('marketSection').classList.remove('hidden'); [cite: 44]
             document.getElementById('marketGrid').innerHTML = `<div onclick="showShops()" class="white-card p-6 h-32 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">Lahore Cluster</h4></div>`;
         }
 
         function showShops() {
-            hideAll(); document.getElementById('shopSection').classList.remove('hidden');
+            hideAll();
+            [cite_start]document.getElementById('shopSection').classList.remove('hidden'); [cite: 46]
             document.getElementById('shopList').innerHTML = performanceData.map(r => `
                 <div onclick="openDrilldown('${r['Bizom ID']}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${r['Total Sales'] >= r['Target'] ? 'status-glow-green' : 'status-glow-red'}">
                     <div class="flex items-center gap-4">
@@ -211,10 +220,10 @@
         }
 
         function openDrilldown(bizId) {
-            const r = performanceData.find(i => String(i['Bizom ID']) === String(bizId));
+            [cite_start]const r = performanceData.find(i => String(i['Bizom ID']) === String(bizId)); [cite: 48]
             if(!r) return;
             const target = r['Target'], actual = r['Total Sales'];
-            const rrr = ((target - actual) / (30 - new Date().getDate() || 1)).toFixed(1);
+            [cite_start]const rrr = ((target - actual) / (30 - new Date().getDate() || 1)).toFixed(1); [cite: 50]
 
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
@@ -231,15 +240,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="skuChart"></canvas></div></div>
                     <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="drillChart"></canvas></div></div>
-                </div>`;
+                [cite_start]</div>`; [cite: 54]
             
-            new Chart(document.getElementById('skuChart'), { type: 'bar', data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [r['6mg'],r['10mg'],r['14mg'],r['17mg']], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-            new Chart(document.getElementById('drillChart'), { type: 'bar', data: { labels: ['TGT', 'ACT'], datasets: [{ data: [target, actual], backgroundColor: ['#1e232d', '#10b981'], borderRadius: 15 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            [cite_start]new Chart(document.getElementById('skuChart'), { type: 'bar', data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [r['6mg'],r['10mg'],r['14mg'],r['17mg']], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); [cite: 55]
+            [cite_start]new Chart(document.getElementById('drillChart'), { type: 'bar', data: { labels: ['TGT', 'ACT'], datasets: [{ data: [target, actual], backgroundColor: ['#1e232d', '#10b981'], borderRadius: 15 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); [cite: 56]
             lucide.createIcons();
         }
 
         function checkRetailerAccess() {
-            const bizId = new URLSearchParams(window.location.search).get('bizid');
+            [cite_start]const bizId = new URLSearchParams(window.location.search).get('bizid'); [cite: 57]
             if (bizId) setTimeout(() => renderRetailerOnlyView(bizId), 500);
         }
 
