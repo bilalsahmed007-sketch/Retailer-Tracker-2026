@@ -1,199 +1,151 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retailer Tracker - Executive</title>
+<script>
+    // Configuration - REPLACE TOKEN HERE IF CLOUD SYNC FAILS
+    const GIST_ID = "1c566a18fa48fd05d3e65b560b0a6853";
+    const GITHUB_TOKEN = "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";
     
-    <script src="data.js"></script>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
+    let performanceData = [];
+    let currentTerritory = '';
+
+    // Initialize Application
+    window.onload = async () => {
+        console.log("System: Booting...");
+        const now = new Date();
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
         
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #0f1115; 
-            color: #e2e8f0;
-            background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%);
-            background-attachment: fixed;
-        }
+        // Step 1: Sync data from Cloud (Gist)
+        await syncFromCloud();
+        
+        // Step 2: Initialize UI icons
+        lucide.createIcons();
+        
+        // Step 3: Check if a specific retailer is logged in
+        checkRetailerAccess();
+    };
 
-        .glass { 
-            background: rgba(30, 35, 45, 0.7); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
+    // --- DATA SYNC LOGIC ---
 
-        .white-card { 
-            background: #ffffff;
-            color: #1a1d23; 
-            border-radius: 1.5rem; 
-            transition: all 0.3s ease; 
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+    async function syncFromCloud() {
+        try {
+            console.log("CloudSync: Fetching from GitHub...");
+            const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`, {
+                headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+            });
 
-        .white-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); }
-
-        .input-field { 
-            background: #1e232d; 
-            border: 1px solid #334155; 
-            border-radius: 1rem; 
-            padding: 1.15rem; 
-            width: 100%; 
-            outline: none; 
-            color: #f8fafc;
-        }
-
-        .status-glow-green { border-left: 6px solid #10b981 !important; }
-        .sync-success { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #10b981 !important; }
-        .sync-error { background: rgba(244, 63, 94, 0.1) !important; border-color: rgba(244, 63, 94, 0.3) !important; color: #f43f5e !important; }
-    </style>
-</head>
-<body class="p-4 md:p-10 pb-32">
-
-    <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0f1115] flex items-center justify-center p-6">
-        <div class="w-full max-w-md p-10 rounded-[2rem] bg-[#1a1d23] border border-slate-800 shadow-2xl text-center">
-            <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
-            </div>
-            <h2 class="text-3xl font-800 text-white italic uppercase mb-8 tracking-tighter">Secure <span class="text-slate-500">Access</span></h2>
-            <div class="space-y-4">
-                <input type="text" id="userInput" placeholder="Identity" class="input-field text-sm font-semibold">
-                <input type="password" id="passInput" placeholder="Passcode" class="input-field text-sm font-semibold">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-800 uppercase text-xs tracking-widest transition-all">Authenticate</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="mainApp" class="hidden max-w-6xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
-            <h1 class="text-4xl md:text-5xl font-800 italic uppercase tracking-tighter text-white">Retailer <span class="text-slate-500">Intelligence</span></h1>
-            <div id="syncBtnContainer" onclick="document.getElementById('fileInput').click()" class="glass px-6 py-4 rounded-2xl cursor-pointer flex items-center gap-4 border border-white/5">
-                <i id="syncIcon" data-lucide="refresh-ccw" class="w-5 h-5 text-blue-400"></i>
-                <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Sync Dataset</span>
-                <input type="file" id="fileInput" class="hidden" accept=".xlsx">
-            </div>
-        </header>
-
-        <div id="filterControls" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-            <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs tracking-widest">
-                <option value="">Select Region</option>
-                <option value="CPR">CPR (Central)</option>
-            </select>
-            <select id="areaSelect" onchange="renderTerritoryView()" disabled class="input-field font-bold uppercase text-xs tracking-widest opacity-40">
-                <option value="">Select Area Cluster</option>
-            </select>
-        </div>
-
-        <main id="contentRoot">
-            <div id="emptyState" class="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-[3rem]">
-                <p class="text-slate-700 font-800 uppercase text-xs tracking-[0.4em]">Awaiting Selection</p>
-            </div>
-            <section id="territorySection" class="hidden"><div id="territoryGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div></section>
-            <section id="marketSection" class="hidden"><div id="marketGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div></section>
-            <section id="shopSection" class="hidden"><div id="shopList" class="grid gap-3"></div></section>
-        </main>
-    </div>
-
-    <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
-        <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div class="flex justify-end mb-8"><button onclick="closeModal()" class="text-slate-400 uppercase font-bold text-xs tracking-widest">CLOSE [X]</button></div>
-            <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 border border-slate-800 shadow-2xl"></div>
-        </div>
-    </div>
-
-    <script>
-        const GIST_ID = "1c566a18fa48fd05d3e65b560b0a6853";
-        let performanceData = [];
-        const hierarchyData = {"CPR":{"Lahore":{"Kasur":["Kasur"]}}};
-
-        window.onload = async () => { await syncFromCloud(); lucide.createIcons(); };
-
-        async function syncFromCloud() {
-            try {
-                const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    performanceData = JSON.parse(data.files["data.json"].content);
-                } else { throw new Error(); }
-            } catch (e) {
-                if (typeof retailerData !== 'undefined') {
-                    performanceData = Object.keys(retailerData).map(id => ({
-                        'Bizom ID': id,
-                        'Shop Name': retailerData[id].name,
-                        'Target': retailerData[id].target,
-                        'Total Sales': retailerData[id].balance,
-                        'Market': 'Kasur'
-                    }));
-                }
+            if (res.ok) {
+                const data = await res.json();
+                const content = data.files["data.json"].content;
+                performanceData = JSON.parse(content);
+                console.log("CloudSync: Success. Records loaded:", performanceData.length);
+            } else {
+                throw new Error(`GitHub returned ${res.status}`);
             }
+        } catch (e) {
+            console.warn("CloudSync: Failed. Loading local data.js fallback...", e.message);
+            fallbackToLocalData();
+        }
+    }
+
+    function fallbackToLocalData() {
+        // Checks if retailerData exists in the included data.js file
+        if (typeof retailerData !== 'undefined') {
+            performanceData = Object.keys(retailerData).map(id => ({
+                'Bizom ID': id,
+                'Shop Name': retailerData[id].name,
+                'Target': retailerData[id].target,
+                'Total Sales': retailerData[id].balance,
+                '6mg': retailerData[id]['6mg'],
+                '10mg': retailerData[id]['10mg'],
+                '14mg': retailerData[id]['14mg'],
+                '17mg': retailerData[id]['17mg'],
+                'Market': "General"
+            }));
+            console.log("Fallback: Data mapped from data.js");
+        }
+    }
+
+    // --- UI & BUSINESS LOGIC ---
+
+    function checkRetailerAccess() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const bizId = urlParams.get('retailer');
+        if (bizId) {
+            console.log("Retailer Mode Detected:", bizId);
+            setTimeout(() => renderRetailerOnlyView(bizId), 800);
+        }
+    }
+
+    function openDrilldown(bizId) {
+        // Robust ID lookup (handles string vs number issues)
+        const record = performanceData.find(i => 
+            String(i['Bizom ID']).trim() === String(bizId).trim()
+        );
+
+        if (!record) {
+            console.error("Lookup Failed: ID", bizId, "not found in current dataset.");
+            alert("Error: Retailer data not found.");
+            return;
         }
 
-        function handleLogin() {
-            if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                lucide.createIcons();
-            } else { alert("Invalid Credentials"); }
-        }
+        renderModal(record);
+    }
 
-        function updateAreas() {
-            const reg = document.getElementById('regionSelect').value;
-            const areaSel = document.getElementById('areaSelect');
-            areaSel.innerHTML = '<option value="">Select Area Cluster</option>';
-            if(reg) {
-                Object.keys(hierarchyData[reg]).forEach(a => areaSel.innerHTML += `<option value="${a}">${a}</option>`);
-                areaSel.disabled = false;
-                areaSel.classList.remove('opacity-40');
-            }
-            hideAll();
-            document.getElementById('emptyState').classList.remove('hidden');
-        }
+    function renderModal(r) {
+        const modal = document.getElementById('detailModal');
+        const body = document.getElementById('modalBody');
+        
+        // Calculate Percentages
+        const target = parseFloat(r['Target']) || 1;
+        const sales = parseFloat(r['Total Sales']) || 0;
+        const pct = Math.min(Math.round((sales / target) * 100), 100);
 
-        function renderTerritoryView() {
-            const reg = document.getElementById('regionSelect').value;
-            const area = document.getElementById('areaSelect').value;
-            const territories = Object.keys(hierarchyData[reg][area]);
-            hideAll();
-            document.getElementById('territorySection').classList.remove('hidden');
-            document.getElementById('territoryGrid').innerHTML = territories.map(t => `<div onclick="showMarkets('${t}')" class="white-card p-10 flex flex-col justify-center text-center"><h4 class="text-xl font-800 uppercase italic">${t}</h4></div>`).join('');
-        }
+        body.innerHTML = `
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-2xl font-extrabold text-white">${r['Shop Name']}</h2>
+                    <p class="text-blue-400 font-mono text-sm">ID: ${r['Bizom ID']}</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-bold uppercase tracking-wider">
+                        ${r['Market'] || 'N/A'}
+                    </span>
+                </div>
+            </div>
 
-        function showMarkets(tName) {
-            const reg = document.getElementById('regionSelect').value;
-            const area = document.getElementById('areaSelect').value;
-            const markets = hierarchyData[reg][area][tName];
-            hideAll();
-            document.getElementById('marketSection').classList.remove('hidden');
-            document.getElementById('marketGrid').innerHTML = markets.map(m => `<div onclick="showShops('${m}')" class="white-card p-6 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">${m}</h4></div>`).join('');
-        }
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <p class="text-gray-400 text-xs mb-1 uppercase">Target</p>
+                    <p class="text-xl font-bold">${target.toLocaleString()}</p>
+                </div>
+                <div class="bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <p class="text-gray-400 text-xs mb-1 uppercase">Achievement</p>
+                    <p class="text-xl font-bold text-blue-400">${sales.toLocaleString()}</p>
+                </div>
+            </div>
 
-        function showShops(mName) {
-            hideAll();
-            document.getElementById('shopSection').classList.remove('hidden');
-            const filtered = performanceData.filter(r => String(r['Market']).toLowerCase() === mName.toLowerCase());
-            document.getElementById('shopList').innerHTML = filtered.map(r => `
-                <div onclick="openDrilldown('${r['Bizom ID']}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer status-glow-green">
-                    <div><h4 class="text-sm font-800 text-slate-900 uppercase italic">${r['Shop Name']}</h4><p class="text-[9px] text-slate-500 font-bold uppercase">ID: ${r['Bizom ID']}</p></div>
-                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300"></i>
-                </div>`).join('');
-            lucide.createIcons();
-        }
+            <div class="mb-8">
+                <div class="flex justify-between text-xs mb-2 uppercase font-bold tracking-widest text-gray-500">
+                    <span>Target Progress</span>
+                    <span class="text-blue-400">${pct}%</span>
+                </div>
+                <div class="h-3 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                    <div class="h-full bg-gradient-to-r from-blue-600 to-indigo-400 transition-all duration-1000" style="width: ${pct}%"></div>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+    }
 
-        function openDrilldown(bizId) {
-            const r = performanceData.find(i => String(i['Bizom ID']) === String(bizId));
-            document.getElementById('detailModal').classList.remove('hidden');
-            document.getElementById('modalBody').innerHTML = `<h2 class="text-4xl font-800 text-white italic uppercase mb-4">${r['Shop Name']}</h2><div class="grid grid-cols-2 gap-4"><div class="bg-slate-900 p-6 rounded-3xl"><p class="text-xs text-slate-500 uppercase">Target</p><p class="text-2xl font-800">${r['Target']}</p></div><div class="bg-slate-900 p-6 rounded-3xl"><p class="text-xs text-slate-500 uppercase">Actual</p><p class="text-2xl font-800 text-emerald-500">${r['Total Sales']}</p></div></div>`;
-        }
+    // --- UTILITIES ---
+    function closeModal() {
+        document.getElementById('detailModal').classList.add('hidden');
+    }
 
-        function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
-        function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
-    </script>
-</body>
-</html>
+    function renderRetailerOnlyView(bizId) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').classList.remove('hidden');
+        document.getElementById('appHeader').style.display = 'none';
+        openDrilldown(bizId);
+    }
+</script>
