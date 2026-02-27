@@ -16,6 +16,8 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f1115; color: #e2e8f0; background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%); background-attachment: fixed; }
         .glass { background: rgba(30, 35, 45, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
         .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; outline: none; color: #f8fafc; }
+        .status-glow-red { border-left: 6px solid #ef4444 !important; }
+        .status-glow-green { border-left: 6px solid #10b981 !important; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -34,26 +36,36 @@
     <div id="mainApp" class="hidden max-w-6xl mx-auto">
         <header id="appHeader" class="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
             <div>
-                <h1 class="text-4xl md:text-5xl font-800 italic uppercase tracking-tighter text-white">Retailer <span class="text-slate-500">Intelligence</span></h1>
+                <h1 class="text-4xl md:text-5xl font-800 italic uppercase tracking-tighter text-white">RETAILER <span class="text-slate-500">INTELLIGENCE</span></h1>
                 <div class="flex items-center gap-4 mt-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                     <span class="flex items-center gap-2 text-emerald-500"><i data-lucide="calendar" class="w-3 h-3"></i> 27 FEB</span>
                     <span class="flex items-center gap-2 text-rose-500"><i data-lucide="timer" class="w-3 h-3"></i> 1 DAYS LEFT</span>
                 </div>
             </div>
-            <button id="syncBtn" class="glass px-6 py-4 rounded-2xl flex items-center gap-3 border-rose-500/20 text-rose-500">
+            <button id="syncBtn" class="glass px-6 py-4 rounded-2xl flex items-center gap-3 border-emerald-500/20 text-emerald-500">
                 <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                <span class="text-[10px] font-800 uppercase tracking-widest">Sync Active</span>
+                <span id="syncStatus" class="text-[10px] font-800 uppercase tracking-widest text-emerald-500">Sync Active</span>
             </button>
         </header>
 
         <div id="filterControls" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <select class="input-field appearance-none font-800 uppercase text-[10px] tracking-widest"><option>Select Region</option></select>
-            <select class="input-field appearance-none font-800 uppercase text-[10px] tracking-widest"><option>Select Area Cluster</option></select>
+            <div class="relative">
+                <select class="input-field appearance-none font-800 uppercase text-[10px] tracking-widest pr-10">
+                    <option>Select Region</option>
+                </select>
+                <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+            </div>
+            <div class="relative">
+                <select class="input-field appearance-none font-800 uppercase text-[10px] tracking-widest pr-10">
+                    <option>Select Area Cluster</option>
+                </select>
+                <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+            </div>
         </div>
 
         <main id="contentRoot">
             <div id="emptyState" class="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-[3rem]">
-                <p class="text-slate-700 font-800 uppercase text-xs">Awaiting Selection...</p>
+                <p class="text-slate-700 font-800 uppercase text-xs">Welcome Admin. Use specific retailer links to view individual performance.</p>
             </div>
         </main>
     </div>
@@ -61,7 +73,9 @@
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
             <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl relative">
-                <button onclick="closeModal()" class="absolute top-10 right-10 text-slate-500 hover:text-white"><i data-lucide="x-circle"></i></button>
+                <button onclick="closeModal()" class="absolute top-10 right-10 text-slate-500 hover:text-white">
+                    <i data-lucide="x-circle" class="w-8 h-8"></i>
+                </button>
                 <div id="modalContent"></div>
             </div>
         </div>
@@ -73,29 +87,32 @@
         window.onload = () => {
             lucide.createIcons();
             
-            // 1. IMPORT FROM DATA.JS
+            // Link the data.js file
             if (typeof retailerData !== 'undefined') {
                 performanceData = Object.keys(retailerData).map(id => ({
-                    'Bizom ID': id,
-                    'Shop Name': retailerData[id].name,
-                    'Target': retailerData[id].target || 0,
-                    'Total Sales': retailerData[id].balance || 0,
-                    'm6': retailerData[id]['6mg'] || 0,
-                    'm10': retailerData[id]['10mg'] || 0,
-                    'm14': retailerData[id]['14mg'] || 0,
-                    'm17': retailerData[id]['17mg'] || 0
+                    bizId: id,
+                    name: retailerData[id].name,
+                    target: retailerData[id].target,
+                    actual: retailerData[id].balance,
+                    m6: retailerData[id]['6mg'] || 0,
+                    m10: retailerData[id]['10mg'] || 0,
+                    m14: retailerData[id]['14mg'] || 0,
+                    m17: retailerData[id]['17mg'] || 0
                 }));
-                // Update Sync Button Status
-                document.getElementById('syncBtn').className = "glass px-6 py-4 rounded-2xl flex items-center gap-3 border-emerald-500/20 text-emerald-500";
+            } else {
+                // If data.js fails to load, show the red Sync Failed button
+                document.getElementById('syncBtn').className = "glass px-6 py-4 rounded-2xl flex items-center gap-3 border-rose-500/20 text-rose-500";
+                document.getElementById('syncStatus').innerText = "Sync Failed";
+                document.getElementById('syncStatus').className = "text-[10px] font-800 uppercase tracking-widest text-rose-500";
             }
 
-            // 2. CHECK URL FOR BIZID
+            // AUTO-OPEN FOR RETAILERS
             const urlParams = new URLSearchParams(window.location.search);
-            const bizId = urlParams.get('bizid');
-            if (bizId) {
+            const bId = urlParams.get('bizid');
+            if (bId) {
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('mainApp').classList.remove('hidden');
-                setTimeout(() => renderRetailerOnlyView(bizId), 300);
+                setTimeout(() => renderRetailerOnlyView(bId), 300);
             }
         };
 
@@ -106,24 +123,36 @@
             } else { alert("Invalid Credentials"); }
         }
 
-        function renderRetailerOnlyView(bizId) {
-            const r = performanceData.find(i => String(i['Bizom ID']) === String(bizId));
+        function renderRetailerOnlyView(id) {
+            const r = performanceData.find(i => String(i.bizId) === String(id));
             if(!r) {
-                document.getElementById('emptyState').innerHTML = `<p class="text-rose-500">Retailer ID ${bizId} not found.</p>`;
+                document.getElementById('emptyState').innerHTML = `<p class="text-rose-500">Retailer ID ${id} not found.</p>`;
                 return;
             }
 
             document.getElementById('detailModal').classList.remove('hidden');
+            const gap = r.target - r.actual;
+
             document.getElementById('modalContent').innerHTML = `
                 <div class="text-center mb-12">
-                    <h2 class="text-5xl font-800 text-white italic uppercase">${r['Shop Name']}</h2>
-                    <p class="text-blue-400 font-bold mt-4 tracking-tighter">BIZOM ID: ${bizId}</p>
+                    <h2 class="text-5xl font-800 text-white italic uppercase">${r.name}</h2>
+                    <p class="text-blue-400 font-bold mt-4 tracking-tighter uppercase">BIZOM ID: ${id}</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-[#111419] p-8 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 block uppercase font-bold">Target</span><p class="text-3xl font-800">${r['Target']}</p></div>
-                    <div class="bg-[#111419] p-8 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 block uppercase font-bold">Actual</span><p class="text-3xl font-800 text-emerald-500">${r['Total Sales']}</p></div>
-                    <div class="bg-[#111419] p-8 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 block uppercase font-bold">Gap</span><p class="text-3xl font-800 text-rose-500">${r['Target'] - r['Total Sales']}</p></div>
-                </div>`;
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-[#111419] p-10 rounded-[2.5rem] text-center border border-white/5">
+                        <span class="text-[10px] text-slate-500 block uppercase font-bold mb-2">Monthly Target</span>
+                        <p class="text-4xl font-800">${r.target}</p>
+                    </div>
+                    <div class="bg-[#111419] p-10 rounded-[2.5rem] text-center border border-white/5">
+                        <span class="text-[10px] text-slate-500 block uppercase font-bold mb-2">Actual Sales</span>
+                        <p class="text-4xl font-800 text-emerald-500">${r.actual}</p>
+                    </div>
+                    <div class="bg-[#111419] p-10 rounded-[2.5rem] text-center border border-white/5">
+                        <span class="text-[10px] text-slate-500 block uppercase font-bold mb-2">Shortfall</span>
+                        <p class="text-4xl font-800 text-rose-500">${gap}</p>
+                    </div>
+                </div>
+            `;
         }
 
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
