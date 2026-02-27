@@ -1,4 +1,4 @@
-// This variable name must be exactly 'retailerData' as per index.txt line 99
+// Using 'var' is mandatory to pass the 'undefined' check in your index script
 var retailerData = {
     "369232": { 
         "name": "Al-Makkah Store", 
