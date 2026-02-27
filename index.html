@@ -122,7 +122,7 @@
             </section>
             <section id="shopSection" class="hidden">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-                    <button id="backBtn" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back to Markets</button>
+                    <button onclick="showMarkets(currentTerritory)" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back to Markets</button>
                     <div class="relative w-full md:w-64"><i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400"></i><input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass !bg-transparent border-slate-700 rounded-full pl-10 pr-6 py-2 text-xs font-bold w-full text-white"></div>
                 </div>
                 <div id="shopList" class="grid gap-3"></div>
@@ -150,10 +150,9 @@
             const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
             document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || 1} Days Left`;
+            
             await syncFromCloud();
             lucide.createIcons();
-            
-            // Trigger QR Logic Check
             checkRetailerAccess();
         };
 
@@ -161,8 +160,11 @@
             try {
                 const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`);
                 const data = await res.json();
-                performanceData = JSON.parse(data.files["data.json"].content);
-            } catch (e) {}
+                if (data.files && data.files["data.json"]) {
+                    performanceData = JSON.parse(data.files["data.json"].content);
+                    console.log("Data loaded from cloud.");
+                }
+            } catch (e) { console.error("Sync Error:", e); }
         }
 
         async function pushToCloud(data) {
@@ -184,14 +186,12 @@
                     icon.classList.replace('text-blue-400', 'text-emerald-400');
                     text.classList.replace('text-blue-400', 'text-emerald-400');
                     text.innerText = "Cloud Synced";
-                    alert("Cloud Sync Successful");
                 } else { throw new Error(); }
             } catch (e) {
                 btn.classList.add('sync-error');
                 icon.classList.replace('text-blue-400', 'text-rose-400');
                 text.classList.replace('text-blue-400', 'text-rose-400');
                 text.innerText = "Sync Failed";
-                alert("Sync Failed - Check Connection");
             }
             document.getElementById('syncIndicator').classList.add('hidden');
         }
@@ -215,11 +215,12 @@
             reader.readAsArrayBuffer(file);
         };
 
-        function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); }
+        function norm(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]/g, '').trim(); }
+        
         function getExcelVal(row, key) {
             const target = norm(key);
             for (let k in row) { if (norm(k).includes(target)) return row[k]; }
-            return "";
+            return 0;
         }
 
         function updateAreas() {
@@ -257,15 +258,17 @@
             document.getElementById('shopList').innerHTML = shops.map(r => {
                 const target = parseFloat(getExcelVal(r, 'Target')) || 0;
                 const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
-                const status = actual >= (target/30)*new Date().getDate() ? 'status-glow-green' : (actual >= (target/30)*new Date().getDate()*0.8 ? 'status-glow-yellow' : 'status-glow-red');
+                const bizId = getExcelVal(r, 'Bizom ID');
+                const day = new Date().getDate();
+                const status = actual >= (target/30)*day ? 'status-glow-green' : (actual >= (target/30)*day*0.8 ? 'status-glow-yellow' : 'status-glow-red');
                 const achieved = target > 0 && actual >= target;
                 return `
-                <div onclick="openDrilldown('${getExcelVal(r, 'Bizom ID')}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${status}">
+                <div onclick="openDrilldown('${bizId}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${status}">
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center"><i data-lucide="store" class="w-5 h-5 text-blue-600"></i></div>
                         <div>
                             <h4 class="text-sm font-800 text-slate-900 uppercase italic flex items-center gap-2">${getExcelVal(r, 'Shop Name') || 'Retailer'} ${achieved ? '<i data-lucide="award" class="w-5 h-5 trophy-active"></i>' : ''}</h4>
-                            <p class="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">BIZOM ID: ${getExcelVal(r, 'Bizom ID')}</p>
+                            <p class="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">BIZOM ID: ${bizId}</p>
                         </div>
                     </div>
                     <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300"></i>
@@ -280,7 +283,7 @@
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
             const payout = getExcelVal(r, 'Amount') || getExcelVal(r, 'Total Payout') || '0';
             const daysLeft = 30 - new Date().getDate() || 1;
-            const rrr = ((target - actual) / daysLeft).toFixed(1);
+            const rrr = daysLeft > 0 ? ((target - actual) / daysLeft).toFixed(1) : (target - actual).toFixed(1);
             
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
@@ -322,18 +325,16 @@
 
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
         function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+        
         function filterShops() {
             const term = document.getElementById('shopSearch').value.toLowerCase();
             Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
         }
 
-        /* --- STEP 2: RETAILER MODE LOGIC --- */
         function checkRetailerAccess() {
             const urlParams = new URLSearchParams(window.location.search);
             const retailerId = urlParams.get('bizid');
-
             if (retailerId) {
-                // Wait for sync to complete then force the view
                 const checkData = setInterval(() => {
                     if (performanceData.length > 0) {
                         clearInterval(checkData);
@@ -344,24 +345,14 @@
         }
 
         function renderRetailerOnlyView(bizId) {
-            // 1. Hide Admin screens
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('mainApp').classList.remove('hidden');
-            
-            // 2. Hide Navigation/Sync controls
             document.getElementById('appHeader').style.display = 'none';
             document.getElementById('filterControls').style.display = 'none';
-            
-            // 3. Open the shop data immediately
             openDrilldown(bizId);
-            
-            // 4. Lock the view (Remove the close button)
             const modalHeader = document.getElementById('modalHeader');
             if(modalHeader) modalHeader.style.display = 'none';
-            
-            // 5. Visual cue for retailer mode
-            const modalBody = document.getElementById('modalBody');
-            modalBody.style.border = "2px solid rgba(59, 130, 246, 0.5)";
+            document.getElementById('modalBody').style.border = "2px solid rgba(59, 130, 246, 0.5)";
         }
     </script>
 </body>
