@@ -53,6 +53,8 @@
         .status-glow-red { border-left: 6px solid #ef4444 !important; }
         .status-glow-green { border-left: 6px solid #10b981 !important; }
 
+        .sync-success { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #10b981 !important; }
+        
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
     </style>
@@ -82,9 +84,9 @@
                     <span class="flex items-center gap-2"><i data-lucide="timer" class="w-4 h-4 text-rose-500"></i> <span id="topDaysLeft">-- Days Left</span></span>
                 </div>
             </div>
-            <div id="syncBtnContainer" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all">
-                <i data-lucide="database" class="w-5 h-5 text-blue-400"></i>
-                <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Data.js Loaded</span>
+            <div id="syncBtnContainer" onclick="refreshData()" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all cursor-pointer hover:bg-white/5 active:scale-95">
+                <i id="syncIcon" data-lucide="refresh-cw" class="w-5 h-5 text-blue-400"></i>
+                <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Refresh Data</span>
             </div>
         </header>
 
@@ -134,22 +136,41 @@
             document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
             document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || 1} Days Left`;
             
-            // TRANSLATION LOGIC: Convert data.js object into the format the script needs
+            refreshData(); // Initialize data
+            lucide.createIcons();
+            checkRetailerAccess();
+        };
+
+        // NEW: This function makes the Refresh button work
+        function refreshData() {
+            const icon = document.getElementById('syncIcon');
+            const text = document.getElementById('syncText');
+            icon.classList.add('animate-spin');
+            text.innerText = "Syncing...";
+
             if (typeof retailerData !== 'undefined') {
                 performanceData = Object.keys(retailerData).map(id => ({
                     'Bizom ID': id,
                     'Shop Name': retailerData[id].name,
                     'Target': retailerData[id].target,
-                    'Total Sales': retailerData[id].balance, // CRITICAL FIX: Mapping balance to Total Sales
+                    'Total Sales': retailerData[id].balance, 
                     '6mg': retailerData[id]['6mg'],
                     '10mg': retailerData[id]['10mg'],
                     '14mg': retailerData[id]['14mg'],
                     '17mg': retailerData[id]['17mg']
                 }));
+
+                setTimeout(() => {
+                    icon.classList.remove('animate-spin');
+                    document.getElementById('syncBtnContainer').classList.add('sync-success');
+                    text.innerText = "Data Connected";
+                    // If we are already in shop view, refresh it
+                    if(!document.getElementById('shopSection').classList.contains('hidden')) showShops();
+                }, 800);
+            } else {
+                alert("data.js not found! Please ensure data.js is in the same folder.");
             }
-            lucide.createIcons();
-            checkRetailerAccess();
-        };
+        }
 
         function handleLogin() {
             if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") {
@@ -168,13 +189,13 @@
 
         function renderTerritoryView() {
             hideAll(); document.getElementById('territorySection').classList.remove('hidden');
-            document.getElementById('territoryGrid').innerHTML = `<div onclick="showMarkets()" class="white-card p-10 h-44 flex flex-col justify-center text-center"><i data-lucide="map-pinned" class="w-8 h-8 text-blue-500 mx-auto mb-4"></i><h4 class="text-xl font-800 uppercase italic tracking-tighter">DHA Region</h4></div>`;
+            document.getElementById('territoryGrid').innerHTML = `<div onclick="showMarkets()" class="white-card p-10 h-44 flex flex-col justify-center text-center"><i data-lucide="map-pinned" class="w-8 h-8 text-blue-500 mx-auto mb-4"></i><h4 class="text-xl font-800 uppercase italic tracking-tighter">Central Region</h4></div>`;
             lucide.createIcons();
         }
 
         function showMarkets() {
             hideAll(); document.getElementById('marketSection').classList.remove('hidden');
-            document.getElementById('marketGrid').innerHTML = `<div onclick="showShops()" class="white-card p-6 h-32 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">Main Market</h4></div>`;
+            document.getElementById('marketGrid').innerHTML = `<div onclick="showShops()" class="white-card p-6 h-32 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">Lahore Cluster</h4></div>`;
         }
 
         function showShops() {
