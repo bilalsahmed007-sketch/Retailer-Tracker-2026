@@ -1,265 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retailer Tracker - Executive</title>
+<div id="syncBtnContainer" onclick="refreshData()" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all cursor-pointer hover:bg-white/10 active:scale-95">
+    <i id="syncIcon" data-lucide="refresh-cw" class="w-5 h-5 text-blue-400"></i>
+    <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Refresh Data</span>
+</div>
+
+<script>
+    let performanceData = [];
+
+    // This function handles the "Data Connected" button action
+    function refreshData() {
+        const icon = document.getElementById('syncIcon');
+        const text = document.getElementById('syncText');
+        const container = document.getElementById('syncBtnContainer');
+
+        // Start Animation
+        icon.classList.add('animate-spin');
+        text.innerText = "Syncing...";
+
+        // Logic to pull from data.js
+        if (typeof retailerData !== 'undefined') {
+            performanceData = Object.keys(retailerData).map(id => ({
+                'Bizom ID': id,
+                'Shop Name': retailerData[id].name,
+                'Target': retailerData[id].target,
+                'Total Sales': retailerData[id].balance, 
+                '6mg': retailerData[id]['6mg'],
+                '10mg': retailerData[id]['10mg'],
+                '14mg': retailerData[id]['14mg'],
+                '17mg': retailerData[id]['17mg']
+            }));
+
+            // Success Visual Feedback
+            setTimeout(() => {
+                icon.classList.remove('animate-spin');
+                text.innerText = "Data Connected";
+                container.classList.add('bg-emerald-500/10', 'border-emerald-500/20');
+                text.classList.replace('text-blue-400', 'text-emerald-400');
+                icon.classList.replace('text-blue-400', 'text-emerald-400');
+                
+                // If you are looking at the shop list, refresh it automatically
+                if(!document.getElementById('shopSection').classList.contains('hidden')) {
+                    showShops();
+                }
+            }, 800);
+        } else {
+            alert("Error: data.js file not found or retailerData variable missing.");
+        }
+    }
+
+    // Update your window.onload to use this new function
+    window.onload = () => {
+        // ... (Keep your existing date logic) ...
+        refreshData(); 
+        lucide.createIcons();
+        checkRetailerAccess();
+    };
     
-    <script src="data.js"></script>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #0f1115; 
-            color: #e2e8f0;
-            background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%);
-            background-attachment: fixed;
-        }
-
-        .glass { 
-            background: rgba(30, 35, 45, 0.7); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .white-card { 
-            background: #ffffff;
-            color: #1a1d23; 
-            border-radius: 1.5rem; 
-            transition: all 0.3s ease; 
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .white-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); }
-
-        .input-field { 
-            background: #1e232d; 
-            border: 1px solid #334155; 
-            border-radius: 1rem; 
-            padding: 1.15rem; 
-            width: 100%; 
-            outline: none; 
-            color: #f8fafc;
-        }
-
-        .status-glow-red { border-left: 6px solid #ef4444 !important; }
-        .status-glow-green { border-left: 6px solid #10b981 !important; }
-
-        .sync-success { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #10b981 !important; }
-        
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-    </style>
-</head>
-<body class="p-4 md:p-10 pb-32">
-
-    <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0f1115] flex items-center justify-center p-6">
-        <div class="w-full max-w-md p-10 rounded-[2rem] bg-[#1a1d23] border border-slate-800 shadow-2xl text-center">
-            <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <i data-lucide="shield-check" class="text-white w-10 h-10"></i>
-            </div>
-            <h2 class="text-3xl font-800 text-white italic uppercase mb-8 tracking-tighter">Secure <span class="text-slate-500">Access</span></h2>
-            <div class="space-y-4">
-                <input type="text" id="userInput" placeholder="Identity" class="input-field text-sm font-semibold">
-                <input type="password" id="passInput" placeholder="Passcode" class="input-field text-sm font-semibold">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-800 uppercase text-xs tracking-widest transition-all">Authenticate</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="mainApp" class="hidden max-w-6xl mx-auto">
-        <header id="appHeader" class="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
-            <div>
-                <h1 class="text-4xl md:text-5xl font-800 italic uppercase tracking-tighter text-white">Retailer <span class="text-slate-500">Intelligence</span></h1>
-                <div class="flex items-center gap-4 text-slate-500 font-semibold text-[11px] mt-2 uppercase tracking-widest">
-                    <span class="flex items-center gap-2"><i data-lucide="calendar-days" class="w-4 h-4 text-emerald-500"></i> <span id="topDate">-- ---</span></span>
-                    <span class="flex items-center gap-2"><i data-lucide="timer" class="w-4 h-4 text-rose-500"></i> <span id="topDaysLeft">-- Days Left</span></span>
-                </div>
-            </div>
-            <div id="syncBtnContainer" onclick="refreshData()" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all cursor-pointer hover:bg-white/5 active:scale-95">
-                <i id="syncIcon" data-lucide="refresh-cw" class="w-5 h-5 text-blue-400"></i>
-                <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Refresh Data</span>
-            </div>
-        </header>
-
-        <div id="filterControls" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-            <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs tracking-widest">
-                <option value="">Select Region</option>
-                <option value="CPR">CPR (Central)</option>
-            </select>
-            <select id="areaSelect" onchange="renderTerritoryView()" disabled class="input-field font-bold uppercase text-xs tracking-widest opacity-40">
-                <option value="">Select Area Cluster</option>
-            </select>
-        </div>
-
-        <main id="contentRoot">
-            <div id="emptyState" class="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-[3rem]">
-                <i data-lucide="layout-grid" class="w-10 h-10 text-slate-700 mb-4"></i>
-                <p class="text-slate-700 font-800 uppercase text-xs tracking-[0.4em]">Awaiting Selection</p>
-            </div>
-            <section id="territorySection" class="hidden"><div id="territoryGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div></section>
-            <section id="marketSection" class="hidden">
-                <div class="mb-8"><button onclick="renderTerritoryView()" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back</button></div>
-                <div id="marketGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div>
-            </section>
-            <section id="shopSection" class="hidden">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-                    <button onclick="showMarkets()" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back</button>
-                    <input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass border-slate-700 rounded-full px-6 py-2 text-xs font-bold w-full md:w-64 text-white">
-                </div>
-                <div id="shopList" class="grid gap-3"></div>
-            </section>
-        </main>
-    </div>
-
-    <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
-        <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div id="modalHeader" class="flex justify-end mb-8"><button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE <i data-lucide="x" class="w-5 h-5"></i></button></div>
-            <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
-        </div>
-    </div>
-
-    <script>
-        let performanceData = [];
-        
-        window.onload = () => {
-            const now = new Date();
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
-            document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || 1} Days Left`;
-            
-            refreshData(); // Initialize data
-            lucide.createIcons();
-            checkRetailerAccess();
-        };
-
-        // NEW: This function makes the Refresh button work
-        function refreshData() {
-            const icon = document.getElementById('syncIcon');
-            const text = document.getElementById('syncText');
-            icon.classList.add('animate-spin');
-            text.innerText = "Syncing...";
-
-            if (typeof retailerData !== 'undefined') {
-                performanceData = Object.keys(retailerData).map(id => ({
-                    'Bizom ID': id,
-                    'Shop Name': retailerData[id].name,
-                    'Target': retailerData[id].target,
-                    'Total Sales': retailerData[id].balance, 
-                    '6mg': retailerData[id]['6mg'],
-                    '10mg': retailerData[id]['10mg'],
-                    '14mg': retailerData[id]['14mg'],
-                    '17mg': retailerData[id]['17mg']
-                }));
-
-                setTimeout(() => {
-                    icon.classList.remove('animate-spin');
-                    document.getElementById('syncBtnContainer').classList.add('sync-success');
-                    text.innerText = "Data Connected";
-                    // If we are already in shop view, refresh it
-                    if(!document.getElementById('shopSection').classList.contains('hidden')) showShops();
-                }, 800);
-            } else {
-                alert("data.js not found! Please ensure data.js is in the same folder.");
-            }
-        }
-
-        function handleLogin() {
-            if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") {
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                lucide.createIcons();
-            } else { alert("Invalid Credentials"); }
-        }
-
-        function updateAreas() {
-            const areaSel = document.getElementById('areaSelect');
-            areaSel.innerHTML = '<option value="">Select Area Cluster</option><option value="Lahore">Lahore</option>';
-            areaSel.disabled = false; areaSel.classList.remove('opacity-40');
-            hideAll(); document.getElementById('emptyState').classList.remove('hidden');
-        }
-
-        function renderTerritoryView() {
-            hideAll(); document.getElementById('territorySection').classList.remove('hidden');
-            document.getElementById('territoryGrid').innerHTML = `<div onclick="showMarkets()" class="white-card p-10 h-44 flex flex-col justify-center text-center"><i data-lucide="map-pinned" class="w-8 h-8 text-blue-500 mx-auto mb-4"></i><h4 class="text-xl font-800 uppercase italic tracking-tighter">Central Region</h4></div>`;
-            lucide.createIcons();
-        }
-
-        function showMarkets() {
-            hideAll(); document.getElementById('marketSection').classList.remove('hidden');
-            document.getElementById('marketGrid').innerHTML = `<div onclick="showShops()" class="white-card p-6 h-32 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">Lahore Cluster</h4></div>`;
-        }
-
-        function showShops() {
-            hideAll(); document.getElementById('shopSection').classList.remove('hidden');
-            document.getElementById('shopList').innerHTML = performanceData.map(r => `
-                <div onclick="openDrilldown('${r['Bizom ID']}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${r['Total Sales'] >= r['Target'] ? 'status-glow-green' : 'status-glow-red'}">
-                    <div class="flex items-center gap-4">
-                        <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center"><i data-lucide="store" class="w-5 h-5 text-blue-600"></i></div>
-                        <div><h4 class="text-sm font-800 text-slate-900 uppercase italic">${r['Shop Name']}</h4><p class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">ID: ${r['Bizom ID']}</p></div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300"></i>
-                </div>`).join('');
-            lucide.createIcons();
-        }
-
-        function openDrilldown(bizId) {
-            const r = performanceData.find(i => String(i['Bizom ID']) === String(bizId));
-            if(!r) return;
-            const target = r['Target'], actual = r['Total Sales'];
-            const rrr = ((target - actual) / (30 - new Date().getDate() || 1)).toFixed(1);
-
-            document.getElementById('detailModal').classList.remove('hidden');
-            document.getElementById('modalBody').innerHTML = `
-                <div class="text-center mb-12">
-                    <h2 class="text-4xl md:text-6xl font-800 text-white italic tracking-tighter uppercase mb-4">${r['Shop Name']}</h2>
-                    <span class="px-6 py-2 bg-slate-800 rounded-full text-[11px] font-bold text-slate-400 uppercase tracking-widest border border-slate-700">BIZOM ID: ${bizId}</span>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Target</span><p class="text-2xl font-800">${target}</p></div>
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Actual</span><p class="text-2xl font-800 text-emerald-500">${actual}</p></div>
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Daily RRR</span><p class="text-2xl font-800 text-slate-300">${rrr}</p></div>
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><span class="text-[9px] text-slate-500 font-bold uppercase block mb-2">Deficit</span><p class="text-2xl font-800 text-rose-500">${target-actual}</p></div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="skuChart"></canvas></div></div>
-                    <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="drillChart"></canvas></div></div>
-                </div>`;
-            
-            new Chart(document.getElementById('skuChart'), { type: 'bar', data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [r['6mg'],r['10mg'],r['14mg'],r['17mg']], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-            new Chart(document.getElementById('drillChart'), { type: 'bar', data: { labels: ['TGT', 'ACT'], datasets: [{ data: [target, actual], backgroundColor: ['#1e232d', '#10b981'], borderRadius: 15 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
-            lucide.createIcons();
-        }
-
-        function checkRetailerAccess() {
-            const bizId = new URLSearchParams(window.location.search).get('bizid');
-            if (bizId) setTimeout(() => renderRetailerOnlyView(bizId), 500);
-        }
-
-        function renderRetailerOnlyView(bizId) {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('appHeader').style.display = 'none';
-            document.getElementById('filterControls').style.display = 'none';
-            openDrilldown(bizId);
-            document.getElementById('modalHeader').style.display = 'none';
-            document.getElementById('modalBody').style.border = "2px solid rgba(59, 130, 246, 0.5)";
-        }
-
-        function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
-        function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
-        function filterShops() {
-            const term = document.getElementById('shopSearch').value.toLowerCase();
-            Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
-        }
-    </script>
-</body>
-</html>
+    // ... (Keep the rest of your functions same) ...
+</script>
