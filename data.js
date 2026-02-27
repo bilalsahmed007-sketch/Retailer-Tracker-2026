@@ -1,4 +1,4 @@
-// MUST be 'var' for global hoisting to pass the check on line 203 of your script
+// Define the data object
 var retailerData = {
     "369232": { 
         "name": "Al-Makkah Store", 
@@ -25,3 +25,8 @@ var retailerData = {
         "6mg": 200, "10mg": 200, "14mg": 250, "17mg": 250 
     }
 };
+
+// FORCE ATTACH TO WINDOW
+// Your index script looks for 'retailerData' on line 38. 
+// This line ensures it is found even if the sync runs early.
+window.retailerData = retailerData;
