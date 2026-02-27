@@ -1,4 +1,4 @@
-// Using 'var' is mandatory to pass the 'undefined' check in your index script
+// MUST be 'var' for global hoisting to pass the check on line 203 of your script
 var retailerData = {
     "369232": { 
         "name": "Al-Makkah Store", 
