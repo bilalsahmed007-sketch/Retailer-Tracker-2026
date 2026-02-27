@@ -1,4 +1,4 @@
-// Use 'var' to ensure it is attached to the global window object immediately
+// This variable name must be exactly 'retailerData' as per index.txt line 99
 var retailerData = {
     "369232": { 
         "name": "Al-Makkah Store", 
