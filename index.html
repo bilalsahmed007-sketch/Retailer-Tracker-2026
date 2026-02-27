@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retailer Tracker - Executive</title>
+    
+    <script src="data.js"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -50,9 +53,6 @@
         .status-glow-red { border-left: 6px solid #ef4444 !important; }
         .status-glow-green { border-left: 6px solid #10b981 !important; }
         .status-glow-yellow { border-left: 6px solid #f59e0b !important; }
-        
-        .sync-success { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #10b981 !important; }
-        .sync-error { background: rgba(244, 63, 94, 0.1) !important; border-color: rgba(244, 63, 94, 0.3) !important; color: #f43f5e !important; }
 
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -85,15 +85,16 @@
             </div>
             <div id="syncBtnContainer" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border border-white/5 transition-all">
                 <i id="syncIcon" data-lucide="refresh-ccw" class="w-5 h-5 text-blue-400"></i>
-                <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Data Synced</span>
+                <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Data Connected</span>
             </div>
         </header>
 
         <div id="filterControls" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-            <select id="regionSelect" class="input-field font-bold uppercase text-xs tracking-widest">
+            <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs tracking-widest">
                 <option value="">Select Region</option>
+                <option value="CPR">CPR (Central)</option>
             </select>
-            <select id="areaSelect" disabled class="input-field font-bold uppercase text-xs tracking-widest opacity-40">
+            <select id="areaSelect" onchange="renderTerritoryView()" disabled class="input-field font-bold uppercase text-xs tracking-widest opacity-40">
                 <option value="">Select Area Cluster</option>
             </select>
         </div>
@@ -103,6 +104,18 @@
                 <i data-lucide="layout-grid" class="w-10 h-10 text-slate-700 mb-4"></i>
                 <p class="text-slate-700 font-800 uppercase text-xs tracking-[0.4em]">Awaiting Selection</p>
             </div>
+            <section id="territorySection" class="hidden"><div id="territoryGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div></section>
+            <section id="marketSection" class="hidden">
+                <div class="mb-8"><button onclick="renderTerritoryView()" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back</button></div>
+                <div id="marketGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div>
+            </section>
+            <section id="shopSection" class="hidden">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+                    <button onclick="showMarkets(currentTerritory)" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back to Markets</button>
+                    <div class="relative w-full md:w-64"><i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400"></i><input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass !bg-transparent border-slate-700 rounded-full pl-10 pr-6 py-2 text-xs font-bold w-full text-white"></div>
+                </div>
+                <div id="shopList" class="grid gap-3"></div>
+            </section>
         </main>
     </div>
 
@@ -114,15 +127,11 @@
     </div>
 
     <script>
-        // YOUR DATA OBJECT
-        const retailerData = {
-            "369232": { "name": "Al-Makkah Store", "target": 1500, "balance": 450, "6mg": 100, "10mg": 50, "14mg": 200, "17mg": 100 },
-            "379638": { "name": "City Mart", "target": 2000, "balance": 1200, "6mg": 300, "10mg": 400, "14mg": 100, "17mg": 400 },
-            "369244": { "name": "Zubair Traders", "target": 1000, "balance": 300, "6mg": 50, "10mg": 50, "14mg": 100, "17mg": 100 },
-            "369241": { "name": "Bismillah General Store", "target": 1800, "balance": 900, "6mg": 200, "10mg": 200, "14mg": 250, "17mg": 250 }
-        };
-
         let performanceData = [];
+        let currentTerritory = '';
+
+        // Internal mapping to fix "Market" logic since your data.js doesn't have it
+        const hierarchyData = {"CPR":{"Lahore":{"DHA":["DHA"]}}};
 
         window.onload = () => {
             const now = new Date();
@@ -130,17 +139,21 @@
             document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
             document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || 1} Days Left`;
             
-            // Map the data object to match the app logic
-            performanceData = Object.keys(retailerData).map(id => ({
-                'Bizom ID': id,
-                'Shop Name': retailerData[id].name,
-                'Target': retailerData[id].target,
-                'Total Sales': retailerData[id].balance,
-                '6mg': retailerData[id]['6mg'],
-                '10mg': retailerData[id]['10mg'],
-                '14mg': retailerData[id]['14mg'],
-                '17mg': retailerData[id]['17mg']
-            }));
+            // BRIDGE: Transform your data.js object into the array format the script expects
+            if (typeof retailerData !== 'undefined') {
+                performanceData = Object.keys(retailerData).map(id => ({
+                    'Bizom ID': id,
+                    'Shop Name': retailerData[id].name,
+                    'Target': retailerData[id].target,
+                    'Total Sales': retailerData[id].balance, // Maps balance to Total Sales
+                    '6mg': retailerData[id]['6mg'],
+                    '10mg': retailerData[id]['10mg'],
+                    '14mg': retailerData[id]['14mg'],
+                    '17mg': retailerData[id]['17mg'],
+                    'Market': 'DHA' // Force link to DHA for your test stores
+                }));
+                document.getElementById('syncBtnContainer').classList.add('sync-success');
+            }
 
             lucide.createIcons();
             checkRetailerAccess();
@@ -154,42 +167,61 @@
             } else { alert("Invalid Credentials"); }
         }
 
-        function checkRetailerAccess() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const bizId = urlParams.get('bizid');
-            if (bizId) {
-                renderRetailerOnlyView(bizId);
-            }
+        function updateAreas() {
+            const areaSel = document.getElementById('areaSelect');
+            areaSel.innerHTML = '<option value="">Select Area Cluster</option><option value="Lahore">Lahore</option>';
+            areaSel.disabled = false; areaSel.classList.remove('opacity-40');
+            hideAll(); document.getElementById('emptyState').classList.remove('hidden');
         }
 
-        function renderRetailerOnlyView(bizId) {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('appHeader').style.display = 'none';
-            document.getElementById('filterControls').style.display = 'none';
-            openDrilldown(bizId);
-            const modalHeader = document.getElementById('modalHeader');
-            if(modalHeader) modalHeader.style.display = 'none';
-            document.getElementById('modalBody').style.border = "2px solid rgba(59, 130, 246, 0.5)";
+        function renderTerritoryView() {
+            hideAll(); document.getElementById('territorySection').classList.remove('hidden');
+            document.getElementById('territoryGrid').innerHTML = `<div onclick="showMarkets('DHA')" class="white-card p-10 h-44 flex flex-col justify-center text-center"><i data-lucide="map-pinned" class="w-8 h-8 text-blue-500 mx-auto mb-4"></i><h4 class="text-xl font-800 uppercase italic tracking-tighter">DHA</h4></div>`;
+            lucide.createIcons();
+        }
+
+        function showMarkets(tName) {
+            currentTerritory = tName;
+            hideAll(); document.getElementById('marketSection').classList.remove('hidden');
+            document.getElementById('marketGrid').innerHTML = `<div onclick="showShops('DHA')" class="white-card p-6 h-32 flex items-center justify-center text-center"><h4 class="text-[10px] font-800 uppercase tracking-widest">DHA Market</h4></div>`;
+        }
+
+        function showShops(mName) {
+            hideAll();
+            document.getElementById('shopSection').classList.remove('hidden');
+            document.getElementById('shopList').innerHTML = performanceData.map(r => {
+                const target = r['Target'] || 0;
+                const actual = r['Total Sales'] || 0;
+                const status = actual >= (target/30)*new Date().getDate() ? 'status-glow-green' : 'status-glow-red';
+                return `
+                <div onclick="openDrilldown('${r['Bizom ID']}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${status}">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center"><i data-lucide="store" class="w-5 h-5 text-blue-600"></i></div>
+                        <div>
+                            <h4 class="text-sm font-800 text-slate-900 uppercase italic">${r['Shop Name']}</h4>
+                            <p class="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">BIZOM ID: ${r['Bizom ID']}</p>
+                        </div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300"></i>
+                </div>`}).join('');
+            lucide.createIcons();
         }
 
         function openDrilldown(bizId) {
             const r = performanceData.find(i => String(i['Bizom ID']) === String(bizId));
             if(!r) return;
-            
             const target = r['Target'];
             const actual = r['Total Sales'];
             const daysLeft = 30 - new Date().getDate() || 1;
             const rrr = ((target - actual) / daysLeft).toFixed(1);
-
+            
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
                 <div class="text-center mb-12">
                     <p class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.4em] mb-2">Retailer Analysis</p>
                     <h2 class="text-4xl md:text-6xl font-800 text-white italic tracking-tighter uppercase mb-4">${r['Shop Name']}</h2>
                     <div class="inline-flex items-center gap-3 px-6 py-2 bg-slate-800/50 rounded-full border border-slate-700">
-                        <i data-lucide="fingerprint" class="w-4 h-4 text-blue-500"></i>
-                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">BIZOM ID: ${bizId}</span>
+                        <i data-lucide="fingerprint" class="w-4 h-4 text-blue-500"></i><span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">BIZOM ID: ${bizId}</span>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
@@ -219,7 +251,31 @@
             lucide.createIcons();
         }
 
+        function checkRetailerAccess() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const retailerId = urlParams.get('bizid');
+            if (retailerId) {
+                setTimeout(() => renderRetailerOnlyView(retailerId), 500);
+            }
+        }
+
+        function renderRetailerOnlyView(bizId) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('appHeader').style.display = 'none';
+            document.getElementById('filterControls').style.display = 'none';
+            openDrilldown(bizId);
+            const modalHeader = document.getElementById('modalHeader');
+            if(modalHeader) modalHeader.style.display = 'none';
+            document.getElementById('modalBody').style.border = "2px solid rgba(59, 130, 246, 0.5)";
+        }
+
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
+        function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+        function filterShops() {
+            const term = document.getElementById('shopSearch').value.toLowerCase();
+            Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
+        }
     </script>
 </body>
 </html>
