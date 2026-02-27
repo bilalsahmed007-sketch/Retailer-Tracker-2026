@@ -1,7 +1,7 @@
 // Save this exactly as data.js
 var retailerData = {
     "369232": { 
-        "name": "Al-Makkah Store", 
+        "name": "Al-Makkah Store",  
         "target": 1500, 
         "balance": 450,
         "territory": "Kasur",
