@@ -1,4 +1,5 @@
-const retailerData = {
+// This format perfectly matches the mapping logic in your index.txt fallback
+var retailerData = {
     "369232": { 
         "name": "Al-Makkah Store", 
         "target": 1500, 
@@ -24,3 +25,6 @@ const retailerData = {
         "6mg": 200, "10mg": 200, "14mg": 250, "17mg": 250 
     }
 };
+
+// This ensures index.txt can find the data even if sync from Cloud fails
+window.retailerData = retailerData;
