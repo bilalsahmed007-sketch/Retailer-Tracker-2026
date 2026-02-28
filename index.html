@@ -84,7 +84,7 @@
     </div>
 
     <div id="mainApp" class="hidden max-w-6xl mx-auto">
-        <header id="appHeader" class="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
             <div>
                 <h1 class="text-4xl md:text-5xl font-800 italic uppercase tracking-tighter text-white">Retailer <span class="text-slate-500">Intelligence</span></h1>
                 <div class="flex items-center gap-4 text-slate-500 font-semibold text-[11px] mt-2 uppercase tracking-widest">
@@ -99,7 +99,7 @@
             </div>
         </header>
 
-        <div id="filterControls" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
             <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs tracking-widest">
                 <option value="">Select Region</option>
                 <option value="CPR">CPR (Central)</option><option value="NPR">NPR (North)</option>
@@ -122,7 +122,7 @@
             </section>
             <section id="shopSection" class="hidden">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-                    <button onclick="showMarkets(currentTerritory)" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back to Markets</button>
+                    <button id="backBtn" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back to Markets</button>
                     <div class="relative w-full md:w-64"><i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400"></i><input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass !bg-transparent border-slate-700 rounded-full pl-10 pr-6 py-2 text-xs font-bold w-full text-white"></div>
                 </div>
                 <div id="shopList" class="grid gap-3"></div>
@@ -132,14 +132,14 @@
 
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div id="modalHeader" class="flex justify-end mb-8"><button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE VIEW <i data-lucide="x" class="w-5 h-5"></i></button></div>
+            <div class="flex justify-end mb-8"><button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE VIEW <i data-lucide="x" class="w-5 h-5"></i></button></div>
             <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
         </div>
     </div>
 
     <script>
-        const GIST_ID = "1c566a18fa48fd05d3e65b560b0a6853";
-        const GITHUB_TOKEN = "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"; 
+        const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd";
+        const GITHUB_TOKEN = "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"; 
 
         let performanceData = [];
         let currentTerritory = '';
@@ -150,21 +150,16 @@
             const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             document.getElementById('topDate').innerText = `${now.getDate()} ${months[now.getMonth()]}`;
             document.getElementById('topDaysLeft').innerText = `${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate() || 1} Days Left`;
-            
             await syncFromCloud();
             lucide.createIcons();
-            checkRetailerAccess();
         };
 
         async function syncFromCloud() {
             try {
                 const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`);
                 const data = await res.json();
-                if (data.files && data.files["data.json"]) {
-                    performanceData = JSON.parse(data.files["data.json"].content);
-                    console.log("Data loaded from cloud.");
-                }
-            } catch (e) { console.error("Sync Error:", e); }
+                performanceData = JSON.parse(data.files["data.json"].content);
+            } catch (e) {}
         }
 
         async function pushToCloud(data) {
@@ -186,12 +181,14 @@
                     icon.classList.replace('text-blue-400', 'text-emerald-400');
                     text.classList.replace('text-blue-400', 'text-emerald-400');
                     text.innerText = "Cloud Synced";
+                    alert("Cloud Sync Successful");
                 } else { throw new Error(); }
             } catch (e) {
                 btn.classList.add('sync-error');
                 icon.classList.replace('text-blue-400', 'text-rose-400');
                 text.classList.replace('text-blue-400', 'text-rose-400');
                 text.innerText = "Sync Failed";
+                alert("Sync Failed - Check Connection");
             }
             document.getElementById('syncIndicator').classList.add('hidden');
         }
@@ -215,12 +212,11 @@
             reader.readAsArrayBuffer(file);
         };
 
-        function norm(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]/g, '').trim(); }
-        
+        function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); }
         function getExcelVal(row, key) {
             const target = norm(key);
             for (let k in row) { if (norm(k).includes(target)) return row[k]; }
-            return 0;
+            return "";
         }
 
         function updateAreas() {
@@ -258,17 +254,15 @@
             document.getElementById('shopList').innerHTML = shops.map(r => {
                 const target = parseFloat(getExcelVal(r, 'Target')) || 0;
                 const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
-                const bizId = getExcelVal(r, 'Bizom ID');
-                const day = new Date().getDate();
-                const status = actual >= (target/30)*day ? 'status-glow-green' : (actual >= (target/30)*day*0.8 ? 'status-glow-yellow' : 'status-glow-red');
+                const status = actual >= (target/30)*new Date().getDate() ? 'status-glow-green' : (actual >= (target/30)*new Date().getDate()*0.8 ? 'status-glow-yellow' : 'status-glow-red');
                 const achieved = target > 0 && actual >= target;
                 return `
-                <div onclick="openDrilldown('${bizId}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${status}">
+                <div onclick="openDrilldown('${getExcelVal(r, 'Bizom ID')}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${status}">
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center"><i data-lucide="store" class="w-5 h-5 text-blue-600"></i></div>
                         <div>
                             <h4 class="text-sm font-800 text-slate-900 uppercase italic flex items-center gap-2">${getExcelVal(r, 'Shop Name') || 'Retailer'} ${achieved ? '<i data-lucide="award" class="w-5 h-5 trophy-active"></i>' : ''}</h4>
-                            <p class="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">BIZOM ID: ${bizId}</p>
+                            <p class="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">BIZOM ID: ${getExcelVal(r, 'Bizom ID')}</p>
                         </div>
                     </div>
                     <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300"></i>
@@ -283,7 +277,7 @@
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
             const payout = getExcelVal(r, 'Amount') || getExcelVal(r, 'Total Payout') || '0';
             const daysLeft = 30 - new Date().getDate() || 1;
-            const rrr = daysLeft > 0 ? ((target - actual) / daysLeft).toFixed(1) : (target - actual).toFixed(1);
+            const rrr = ((target - actual) / daysLeft).toFixed(1);
             
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
@@ -325,34 +319,9 @@
 
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
         function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
-        
         function filterShops() {
             const term = document.getElementById('shopSearch').value.toLowerCase();
             Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
-        }
-
-        function checkRetailerAccess() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const retailerId = urlParams.get('bizid');
-            if (retailerId) {
-                const checkData = setInterval(() => {
-                    if (performanceData.length > 0) {
-                        clearInterval(checkData);
-                        renderRetailerOnlyView(retailerId);
-                    }
-                }, 500);
-            }
-        }
-
-        function renderRetailerOnlyView(bizId) {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('appHeader').style.display = 'none';
-            document.getElementById('filterControls').style.display = 'none';
-            openDrilldown(bizId);
-            const modalHeader = document.getElementById('modalHeader');
-            if(modalHeader) modalHeader.style.display = 'none';
-            document.getElementById('modalBody').style.border = "2px solid rgba(59, 130, 246, 0.5)";
         }
     </script>
 </body>
