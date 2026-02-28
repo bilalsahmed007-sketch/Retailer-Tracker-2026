@@ -15,17 +15,11 @@
         .glass { background: rgba(30, 35, 45, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .white-card { background: #ffffff; color: #1a1d23; border-radius: 1.5rem; transition: all 0.3s ease; cursor: pointer; }
         .white-card:hover { transform: translateY(-5px); }
-        .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; color: #f8fafc; outline: none; }
-        #qr-space { background: white; padding: 10px; border-radius: 12px; display: inline-block; margin-top: 15px; }
-        .hidden-element { display: none !important; }
+        .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; outline: none; color: #f8fafc; }
+        #qr-code-space { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-top: 10px; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
-
-    <div id="qrLoader" class="fixed inset-0 z-[200] bg-[#0f1115] flex flex-col items-center justify-center hidden">
-        <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p class="text-xs font-bold uppercase tracking-widest text-slate-500">Loading Secure Dashboard...</p>
-    </div>
 
     <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0f1115] flex items-center justify-center p-6">
         <div class="w-full max-w-md p-10 rounded-[2rem] bg-[#1a1d23] border border-slate-800 shadow-2xl text-center">
@@ -45,18 +39,18 @@
                 <p id="topDate" class="text-slate-500 font-bold text-xs uppercase tracking-widest mt-2"></p>
             </div>
             <div class="flex items-center gap-3">
-                <div id="syncBtnContainer" onclick="document.getElementById('fileInput').click()" class="glass px-6 py-4 rounded-2xl cursor-pointer flex items-center gap-4">
+                <div id="syncBtnContainer" onclick="document.getElementById('fileInput').click()" class="glass px-6 py-4 rounded-2xl cursor-pointer flex items-center gap-4 border border-white/5">
                     <i data-lucide="refresh-ccw" class="w-5 h-5 text-blue-400"></i>
-                    <span class="text-xs font-bold uppercase text-blue-400">Sync</span>
+                    <span class="text-xs font-bold uppercase text-blue-400">Sync Dataset</span>
                     <input type="file" id="fileInput" class="hidden" accept=".xlsx">
                 </div>
-                <button id="logoutBtn" onclick="location.href=window.location.pathname" class="glass p-4 rounded-2xl text-rose-500 border border-rose-500/20">
+                <button onclick="location.href=window.location.pathname" class="glass p-4 rounded-2xl text-rose-500 border border-rose-500/20" title="Logout">
                     <i data-lucide="power" class="w-5 h-5"></i>
                 </button>
             </div>
         </header>
 
-        <div id="adminNav" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+        <div id="adminFilters" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
             <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs">
                 <option value="">Select Region</option>
                 <option value="CPR">CPR</option><option value="NPR">NPR</option><option value="SPR">SPR</option><option value="S&B">S&B</option>
@@ -71,10 +65,12 @@
                 <p class="text-slate-700 font-800 uppercase text-xs tracking-widest">Awaiting Selection</p>
             </div>
             <section id="territorySection" class="hidden"><div id="territoryGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div></section>
+            
             <section id="marketSection" class="hidden">
                 <button onclick="renderTerritoryView()" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] mb-8 hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4"></i> Back to Territories</button>
                 <div id="marketGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div>
             </section>
+
             <section id="shopSection" class="hidden">
                 <button onclick="showMarkets(currentTerritory)" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] mb-8 hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4"></i> Back to Markets</button>
                 <div id="shopList" class="grid gap-3"></div>
@@ -84,7 +80,7 @@
 
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div id="modalHeader" class="flex justify-end mb-8"><button onclick="closeModal()" class="text-slate-400 font-bold text-xs uppercase">CLOSE <i data-lucide="x" class="w-5 h-5 inline"></i></button></div>
+            <div id="modalCloseContainer" class="flex justify-end mb-8"><button onclick="closeModal()" class="text-slate-400 font-bold text-xs uppercase">CLOSE VIEW <i data-lucide="x" class="w-5 h-5 inline"></i></button></div>
             <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
         </div>
     </div>
@@ -94,7 +90,7 @@
         let performanceData = [];
         let currentTerritory = '';
 
-        // Keep your original hierarchyData
+        // Hierarchy Data (Kept as per your base script)
         const hierarchyData = {"CPR":{"Lahore":{"Kasur":["Kasur"],"Mughalpura":["Lahore"],"Gulberg":["Lahore"],"DHA":["Lahore"],"Raiwind":["Lahore"],"Shahdara":["Shahdara"],"Samanabad":["Lahore"],"Islampura":["Lahore"],"Railway Station":["Lahore"],"Mall Road":["Lahore"],"Wall City":["Lahore"],"Model Town":["Lahore"],"Township":["Lahore"]},"Faisalabad":{"Jhang":["AP Sial","Jhang"],"Pensera":["AP Banglow","Bhowana","Pensera"],"Rabwah":["Rabwah"],"Faisalabad-A":["Faisalabad"],"Faisalabad-B":["Faisalabad"],"Faisalabad-C":["Faisalabad"],"Toba Tek Singh":["Gojra","Shorkot","Toba Tek Singh"],"Jaranwala":["Jaranwala"],"MoreKhunda":["MoreKhunda"],"Shahkot":["Shahkot"],"Samundri":["Mureedwala","Samundri","Tandlianwala"]},"Gujranwala":{"Sialkot":["Daska","Sialkot"],"Daska":["Daska","Pasrur","Sambrial"],"Narowal":["Narang Mandi","Narowal","Shakargarh","Zafarwal"],"Wazirabad":["Ali Pur Chattha","Qilla Didar Singh","Wazirabad"],"Gujranwala-A":["Gujranwala"],"Gujranwala-B":["Gujranwala","Gujranwala Cantt"],"Hafizabad":["Hafizabad","Nowshera Virkan","Pindi Bhattian"],"Sheikhupura":["Farooqabad","Khanqa Dogran","Sheikhupura"],"Kamoke":["Kamoke","Muridke"]}},"NPR":{"Islamabad":{"Chakwal":["Chakwal"],"Talagang":["Fateh Jang","Talagang"],"Murree":["Gujar Khan","Kahuta","Kallar","Murree"],"Islamabad West":["Islamabad"],"Islamabad Suburb":["Islamabad"],"Islamabad East":["Islamabad"],"Rawalpindi A":["Rawalpindi"],"Rawalpindi B":["Rawalpindi"],"Rawalpindi C":["Rawalpindi"]},"Jhelum":{"Gujrat":["Daulat Nagar","Gujrat","Jalalpur"],"Dinga":["Lalamusa","Phalia"],"Mirpur":["Islamghar","Mirpur"],"Mandibhaudin":["Khewra","Mandi Bahauddin","PDKhan","Pinanwal"],"Jhelum":["Jhelum"]},"Northern Area":{"Abbottabad":["Abbottabad","Haripur"],"Wah":["Attock","Taxila","Wah Cantt"],"Muzaffarabad":["Bagh","Muzaffarabad"],"Mansehra":["Balakot","Besham","Mansehra"],"Rawalakot":["F Kahutta","Hajeera","Rawalakot"],"Gilgit":["Gilgit","Skardu"],"Kotli":["Kotli","Plandri"]},"Peshawar":{"DI Khan":["Bannu","DIKhan","Wana"],"Minghora":["Batkhela","Chitral","Mingora","Timergara"],"Peshawar B":["Charsadda","Peshawar"],"Kohat":["Hangu","Karak","Kohat"],"Mardan":["Mardan","Nowshera","Swabi"],"Peshawar A":["Peshawar"]},"Sargodha":{"Bhalwal":["Bhalwal","Bhera","Kotmomin"],"Mianwali":["Isakhel","Mianwali","Quaidabad","Rangpur"],"Joharabad":["Khushab","Sillanwali"],"Sargodha A":["Sargodha"],"Sargodha B":["Sargodha"]}},"SPR":{"Bahawalpur":{"Khanbela":["AP East","Khanbela"],"Bahawalpur":["Bahawalpur"],"Chishtian":["Chishtian"],"Yazman":["Faqirwali","Yazman"],"Lodhran":["Jalalpur Pirwala","Lodhran"],"RYK":["Rahim Yar Khan"]},"DG Khan":{"Bhakkar":["Bhakkar"],"Layyah":["Layyah"],"Kot Addu":["Chowkmunda","Kot Addu","Taunsa"],"Rajanpur":["Fazilpur","Jampur","Rajanpur","Rojhan"],"Muzaffargarh":["Jatoi","Muzafargarh","Rohilanwali"],"DG Khan":["DG Khan","Kot Chutta","Sakhi Sarwar"]},"Sukkur":{"Khairpur":["Choondko","Gambat","Khairpur Mirs","Pir Jo Goth"],"Jacobabad":["Dera Allah Yar","JACOBABAD","Kandhkot","Kandhkot","Kashmore","Usta Muhammad"],"Ghotki":["Ghotki","Mirpur Mathelo","Rohri","UBARO"],"Sukkur":["Shikarpur","Sukkur","Thull"]},"Sahiwal":{"Sahiwal":["Sahiwal"],"Arifwala":["Arifwala","Bahawalnagar"],"Chichawatni":["Chichawatni","Kamalia"],"Pakpattan":["Depalpur","Minchinabad","Pakpattan","Theeng More"],"Pattoki":["Pattoki","Theeng More"],"Okara":["Okara","Renala Khurd"]},"Multan":{"Burewala":["Burewala","Luddan"],"Dunyapur":["Dunyapur","Mailsi"],"Vehari":["Jahanian","Vehari"],"Kabirwala":["Kabirwala"],"Khanewal":["Khanewal"],"Multan":["Multan"],"Mian Channu":["Mianchanu","Pir Mahal"]}},"S&B":{"Hyderabad":{"Badin Territory":["Badin","Golrachi","Matli","Tando Muhammad Khan"],"Thar Territory":["Digri","Kunri","Naukot","Umerkot"],"Hyderabad Territory":["Hyderabad","Jamshoro","Kotri"],"Mirpurkhas Territory":["Khipro","Mirpurkhas","Tando Allahyar"],"Thatta Territory":["Nooriabad","Thatta"],"TandoAdam Territory":["SP Chakar","Saeedabad","Sanghar","Shahdadpur","Tando Adam"]},"Karachi":{"DHA":["Karachi"],"GIB":["Karachi"],"KBR":["Karachi"],"KRG":["Karachi"],"LDI":["Karachi"],"MLR":["Karachi"],"MTV":["Karachi"],"NKR":["Karachi"],"OLC":["Karachi"]},"Nawabshah":{"Naushero Territory":["Bhiria","Kandiaro","Mehrabpur","Moro","Naushero Feroze","Nawabshah","Qazi Ahmed"],"Dadu Territory":["Dadu","Khairpur Nathan Shah","Mehar","Sann","Sehwan"],"Nawabshah":["Daur","Nawabshah","Qazi Ahmed"],"Nawabshah Territory":["Nawabshah"],"Kamber Territory":["Kamber Ali khan","Naseerabad","Shahdad kot"],"Larkana Territory":["Larkana","Naudero","Ratodero"]},"Quetta":{"Coastal Territory":["Gwadar","Uthal"],"Khuzdar Territory":["Khuzdar","Mastung"],"Lorlai Territory":["Loralai","Qilla Saifullah","ZHOB"],"Quetta B Territory":["Pishin"],"Quetta A Territory":["Quetta"]}}};
 
         window.onload = async () => {
@@ -108,7 +104,7 @@
                 const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`);
                 const data = await res.json();
                 performanceData = JSON.parse(data.files["data.json"].content);
-            } catch (e) { console.error("Sync Failed"); }
+            } catch (e) { console.error("Sync Error"); }
         }
 
         function handleLogin() {
@@ -116,7 +112,7 @@
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('mainApp').classList.remove('hidden');
                 lucide.createIcons();
-            } else { alert("Access Denied"); }
+            } else { alert("Invalid Credentials"); }
         }
 
         function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); }
@@ -136,7 +132,6 @@
         function renderTerritoryView() {
             const reg = document.getElementById('regionSelect').value;
             const area = document.getElementById('areaSelect').value;
-            if(!reg || !area) return;
             const territories = Object.keys(hierarchyData[reg][area]).sort();
             hideAll(); document.getElementById('territorySection').classList.remove('hidden');
             document.getElementById('territoryGrid').innerHTML = territories.map(t => `<div onclick="showMarkets('${t}')" class="white-card p-10 h-44 flex flex-col justify-center text-center"><h4 class="text-xl font-800 uppercase italic">${t}</h4></div>`).join('');
@@ -156,7 +151,7 @@
             const shops = performanceData.filter(r => norm(getExcelVal(r, 'Market')).includes(norm(mName)));
             document.getElementById('shopList').innerHTML = shops.map(r => `
                 <div onclick="openDrilldown('${getExcelVal(r, 'Bizom ID')}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer">
-                    <div><h4 class="text-sm font-800 text-slate-900 uppercase italic">${getExcelVal(r, 'Shop Name')}</h4><p class="text-[9px] text-slate-500 font-bold uppercase">ID: ${getExcelVal(r, 'Bizom ID')}</p></div>
+                    <div><h4 class="text-sm font-800 text-slate-900 uppercase italic">${getExcelVal(r, 'Shop Name')}</h4><p class="text-[9px] text-slate-500 font-bold uppercase">BIZOM ID: ${getExcelVal(r, 'Bizom ID')}</p></div>
                     <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300"></i>
                 </div>`).join('');
             lucide.createIcons();
@@ -173,7 +168,7 @@
                 <div class="text-center mb-12">
                     <h2 class="text-4xl md:text-6xl font-800 text-white italic uppercase mb-2">${getExcelVal(r, 'Shop Name')}</h2>
                     <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">BIZOM ID: ${bizId}</p>
-                    <div id="qr-space"></div>
+                    <div id="qr-code-space"></div>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
                     <div class="bg-[#111419] p-6 rounded-3xl text-center"><span class="text-[9px] text-slate-500 uppercase block">Target</span><p class="text-2xl font-800">${target}</p></div>
@@ -183,8 +178,9 @@
                 </div>
                 <div class="h-64"><canvas id="drillChart"></canvas></div>`;
 
+            // Auto QR Generator
             const baseUrl = window.location.href.split('?')[0];
-            new QRCode(document.getElementById("qr-space"), { text: `${baseUrl}?id=${bizId}`, width: 110, height: 110 });
+            new QRCode(document.getElementById("qr-code-space"), { text: `${baseUrl}?id=${bizId}`, width: 110, height: 110 });
 
             new Chart(document.getElementById('drillChart'), {
                 type: 'bar',
@@ -197,30 +193,25 @@
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
         function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
 
-        // --- THE "FIX" ---
+        // QR Auto-Loader & Lock Logic
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
             const retailerId = urlParams.get('id');
             if (retailerId) {
-                // FORCE LOCK login screen immediately
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('qrLoader').classList.remove('hidden');
-                
-                const check = setInterval(() => {
+                document.getElementById('loginScreen').style.display = 'none'; // Force hide login
+                const waiter = setInterval(() => {
                     if (performanceData.length > 0) {
-                        clearInterval(check);
-                        const exists = performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(retailerId));
-                        if (exists) {
-                            document.getElementById('qrLoader').classList.add('hidden');
+                        clearInterval(waiter);
+                        const r = performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(retailerId));
+                        if (r) {
                             document.getElementById('mainApp').classList.remove('hidden');
                             openDrilldown(retailerId);
-                            // Hide Admin/Nav UI
+                            // Lock UI for scanner
                             document.getElementById('syncBtnContainer').style.display = 'none';
-                            document.getElementById('modalHeader').style.display = 'none';
-                            document.getElementById('adminNav').style.display = 'none';
-                            document.getElementById('logoutBtn').style.display = 'none';
-                            document.querySelectorAll('button[onclick*="showMarkets"], button[onclick*="renderTerritoryView"]').forEach(b => b.classList.add('hidden-element'));
-                        } else { alert("Invalid QR Link"); location.href = window.location.pathname; }
+                            document.getElementById('modalCloseContainer').style.display = 'none';
+                            document.getElementById('adminFilters').style.display = 'none';
+                            document.querySelectorAll('button[onclick*="showMarkets"], button[onclick*="renderTerritoryView"]').forEach(b => b.style.display = 'none');
+                        }
                     }
                 }, 500);
             }
