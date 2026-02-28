@@ -50,6 +50,10 @@
             </div>
         </header>
 
+        <div class="mb-6">
+            <input type="text" id="shopSearch" onkeyup="filterShops()" placeholder="Quick Search Shops..." class="input-field text-xs font-bold uppercase tracking-widest">
+        </div>
+
         <div id="adminFilters" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
             <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs">
                 <option value="">Select Region</option>
@@ -87,10 +91,9 @@
 
     <script>
         const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd";
-        let performanceData = [];
+        window.performanceData = []; // Using window for global availability
         let currentTerritory = '';
 
-        // Hierarchy Data (Kept as per your base script)
         const hierarchyData = {"CPR":{"Lahore":{"Kasur":["Kasur"],"Mughalpura":["Lahore"],"Gulberg":["Lahore"],"DHA":["Lahore"],"Raiwind":["Lahore"],"Shahdara":["Shahdara"],"Samanabad":["Lahore"],"Islampura":["Lahore"],"Railway Station":["Lahore"],"Mall Road":["Lahore"],"Wall City":["Lahore"],"Model Town":["Lahore"],"Township":["Lahore"]},"Faisalabad":{"Jhang":["AP Sial","Jhang"],"Pensera":["AP Banglow","Bhowana","Pensera"],"Rabwah":["Rabwah"],"Faisalabad-A":["Faisalabad"],"Faisalabad-B":["Faisalabad"],"Faisalabad-C":["Faisalabad"],"Toba Tek Singh":["Gojra","Shorkot","Toba Tek Singh"],"Jaranwala":["Jaranwala"],"MoreKhunda":["MoreKhunda"],"Shahkot":["Shahkot"],"Samundri":["Mureedwala","Samundri","Tandlianwala"]},"Gujranwala":{"Sialkot":["Daska","Sialkot"],"Daska":["Daska","Pasrur","Sambrial"],"Narowal":["Narang Mandi","Narowal","Shakargarh","Zafarwal"],"Wazirabad":["Ali Pur Chattha","Qilla Didar Singh","Wazirabad"],"Gujranwala-A":["Gujranwala"],"Gujranwala-B":["Gujranwala","Gujranwala Cantt"],"Hafizabad":["Hafizabad","Nowshera Virkan","Pindi Bhattian"],"Sheikhupura":["Farooqabad","Khanqa Dogran","Sheikhupura"],"Kamoke":["Kamoke","Muridke"]}},"NPR":{"Islamabad":{"Chakwal":["Chakwal"],"Talagang":["Fateh Jang","Talagang"],"Murree":["Gujar Khan","Kahuta","Kallar","Murree"],"Islamabad West":["Islamabad"],"Islamabad Suburb":["Islamabad"],"Islamabad East":["Islamabad"],"Rawalpindi A":["Rawalpindi"],"Rawalpindi B":["Rawalpindi"],"Rawalpindi C":["Rawalpindi"]},"Jhelum":{"Gujrat":["Daulat Nagar","Gujrat","Jalalpur"],"Dinga":["Lalamusa","Phalia"],"Mirpur":["Islamghar","Mirpur"],"Mandibhaudin":["Khewra","Mandi Bahauddin","PDKhan","Pinanwal"],"Jhelum":["Jhelum"]},"Northern Area":{"Abbottabad":["Abbottabad","Haripur"],"Wah":["Attock","Taxila","Wah Cantt"],"Muzaffarabad":["Bagh","Muzaffarabad"],"Mansehra":["Balakot","Besham","Mansehra"],"Rawalakot":["F Kahutta","Hajeera","Rawalakot"],"Gilgit":["Gilgit","Skardu"],"Kotli":["Kotli","Plandri"]},"Peshawar":{"DI Khan":["Bannu","DIKhan","Wana"],"Minghora":["Batkhela","Chitral","Mingora","Timergara"],"Peshawar B":["Charsadda","Peshawar"],"Kohat":["Hangu","Karak","Kohat"],"Mardan":["Mardan","Nowshera","Swabi"],"Peshawar A":["Peshawar"]},"Sargodha":{"Bhalwal":["Bhalwal","Bhera","Kotmomin"],"Mianwali":["Isakhel","Mianwali","Quaidabad","Rangpur"],"Joharabad":["Khushab","Sillanwali"],"Sargodha A":["Sargodha"],"Sargodha B":["Sargodha"]}},"SPR":{"Bahawalpur":{"Khanbela":["AP East","Khanbela"],"Bahawalpur":["Bahawalpur"],"Chishtian":["Chishtian"],"Yazman":["Faqirwali","Yazman"],"Lodhran":["Jalalpur Pirwala","Lodhran"],"RYK":["Rahim Yar Khan"]},"DG Khan":{"Bhakkar":["Bhakkar"],"Layyah":["Layyah"],"Kot Addu":["Chowkmunda","Kot Addu","Taunsa"],"Rajanpur":["Fazilpur","Jampur","Rajanpur","Rojhan"],"Muzaffargarh":["Jatoi","Muzafargarh","Rohilanwali"],"DG Khan":["DG Khan","Kot Chutta","Sakhi Sarwar"]},"Sukkur":{"Khairpur":["Choondko","Gambat","Khairpur Mirs","Pir Jo Goth"],"Jacobabad":["Dera Allah Yar","JACOBABAD","Kandhkot","Kandhkot","Kashmore","Usta Muhammad"],"Ghotki":["Ghotki","Mirpur Mathelo","Rohri","UBARO"],"Sukkur":["Shikarpur","Sukkur","Thull"]},"Sahiwal":{"Sahiwal":["Sahiwal"],"Arifwala":["Arifwala","Bahawalnagar"],"Chichawatni":["Chichawatni","Kamalia"],"Pakpattan":["Depalpur","Minchinabad","Pakpattan","Theeng More"],"Pattoki":["Pattoki","Theeng More"],"Okara":["Okara","Renala Khurd"]},"Multan":{"Burewala":["Burewala","Luddan"],"Dunyapur":["Dunyapur","Mailsi"],"Vehari":["Jahanian","Vehari"],"Kabirwala":["Kabirwala"],"Khanewal":["Khanewal"],"Multan":["Multan"],"Mian Channu":["Mianchanu","Pir Mahal"]}},"S&B":{"Hyderabad":{"Badin Territory":["Badin","Golrachi","Matli","Tando Muhammad Khan"],"Thar Territory":["Digri","Kunri","Naukot","Umerkot"],"Hyderabad Territory":["Hyderabad","Jamshoro","Kotri"],"Mirpurkhas Territory":["Khipro","Mirpurkhas","Tando Allahyar"],"Thatta Territory":["Nooriabad","Thatta"],"TandoAdam Territory":["SP Chakar","Saeedabad","Sanghar","Shahdadpur","Tando Adam"]},"Karachi":{"DHA":["Karachi"],"GIB":["Karachi"],"KBR":["Karachi"],"KRG":["Karachi"],"LDI":["Karachi"],"MLR":["Karachi"],"MTV":["Karachi"],"NKR":["Karachi"],"OLC":["Karachi"]},"Nawabshah":{"Naushero Territory":["Bhiria","Kandiaro","Mehrabpur","Moro","Naushero Feroze","Nawabshah","Qazi Ahmed"],"Dadu Territory":["Dadu","Khairpur Nathan Shah","Mehar","Sann","Sehwan"],"Nawabshah":["Daur","Nawabshah","Qazi Ahmed"],"Nawabshah Territory":["Nawabshah"],"Kamber Territory":["Kamber Ali khan","Naseerabad","Shahdad kot"],"Larkana Territory":["Larkana","Naudero","Ratodero"]},"Quetta":{"Coastal Territory":["Gwadar","Uthal"],"Khuzdar Territory":["Khuzdar","Mastung"],"Lorlai Territory":["Loralai","Qilla Saifullah","ZHOB"],"Quetta B Territory":["Pishin"],"Quetta A Territory":["Quetta"]}}};
 
         window.onload = async () => {
@@ -103,9 +106,25 @@
             try {
                 const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`);
                 const data = await res.json();
-                performanceData = JSON.parse(data.files["data.json"].content);
-            } catch (e) { console.error("Sync Error"); }
+                window.performanceData = JSON.parse(data.files["data.json"].content);
+            } catch (e) { console.error("Cloud Sync Error"); }
         }
+
+        // --- EXCEL UPLOAD HANDLER ---
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                window.performanceData = XLSX.utils.sheet_to_json(firstSheet);
+                alert("✅ Successfully synced " + window.performanceData.length + " retailers.");
+                renderTerritoryView();
+            };
+            reader.readAsArrayBuffer(file);
+        });
 
         function handleLogin() {
             if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") {
@@ -132,6 +151,7 @@
         function renderTerritoryView() {
             const reg = document.getElementById('regionSelect').value;
             const area = document.getElementById('areaSelect').value;
+            if(!reg || !area) return;
             const territories = Object.keys(hierarchyData[reg][area]).sort();
             hideAll(); document.getElementById('territorySection').classList.remove('hidden');
             document.getElementById('territoryGrid').innerHTML = territories.map(t => `<div onclick="showMarkets('${t}')" class="white-card p-10 h-44 flex flex-col justify-center text-center"><h4 class="text-xl font-800 uppercase italic">${t}</h4></div>`).join('');
@@ -148,7 +168,7 @@
 
         function showShops(mName) {
             hideAll(); document.getElementById('shopSection').classList.remove('hidden');
-            const shops = performanceData.filter(r => norm(getExcelVal(r, 'Market')).includes(norm(mName)));
+            const shops = window.performanceData.filter(r => norm(getExcelVal(r, 'Market')).includes(norm(mName)));
             document.getElementById('shopList').innerHTML = shops.map(r => `
                 <div onclick="openDrilldown('${getExcelVal(r, 'Bizom ID')}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer">
                     <div><h4 class="text-sm font-800 text-slate-900 uppercase italic">${getExcelVal(r, 'Shop Name')}</h4><p class="text-[9px] text-slate-500 font-bold uppercase">BIZOM ID: ${getExcelVal(r, 'Bizom ID')}</p></div>
@@ -158,7 +178,7 @@
         }
 
         function openDrilldown(bizId) {
-            const r = performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
+            const r = window.performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
             if(!r) return;
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
@@ -178,7 +198,6 @@
                 </div>
                 <div class="h-64"><canvas id="drillChart"></canvas></div>`;
 
-            // Auto QR Generator
             const baseUrl = window.location.href.split('?')[0];
             new QRCode(document.getElementById("qr-code-space"), { text: `${baseUrl}?id=${bizId}`, width: 110, height: 110 });
 
@@ -192,25 +211,25 @@
 
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
         function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+        function filterShops() {
+            const term = document.getElementById('shopSearch').value.toLowerCase();
+            Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
+        }
 
-        // QR Auto-Loader & Lock Logic
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
             const retailerId = urlParams.get('id');
             if (retailerId) {
-                document.getElementById('loginScreen').style.display = 'none'; // Force hide login
-                const waiter = setInterval(() => {
-                    if (performanceData.length > 0) {
-                        clearInterval(waiter);
-                        const r = performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(retailerId));
-                        if (r) {
+                document.getElementById('loginScreen').style.display = 'none';
+                const qrInterval = setInterval(() => {
+                    if (window.performanceData && window.performanceData.length > 0) {
+                        clearInterval(qrInterval);
+                        if (window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(retailerId))) {
                             document.getElementById('mainApp').classList.remove('hidden');
                             openDrilldown(retailerId);
-                            // Lock UI for scanner
                             document.getElementById('syncBtnContainer').style.display = 'none';
                             document.getElementById('modalCloseContainer').style.display = 'none';
                             document.getElementById('adminFilters').style.display = 'none';
-                            document.querySelectorAll('button[onclick*="showMarkets"], button[onclick*="renderTerritoryView"]').forEach(b => b.style.display = 'none');
                         }
                     }
                 }, 500);
