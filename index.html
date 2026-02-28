@@ -11,63 +11,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background: #0f1115; 
-            color: #e2e8f0;
-            background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%);
-            background-attachment: fixed;
-        }
-
-        .glass { 
-            background: rgba(30, 35, 45, 0.7); 
-            backdrop-filter: blur(12px); 
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .white-card { 
-            background: #ffffff;
-            color: #1a1d23; 
-            border-radius: 1.5rem; 
-            transition: all 0.3s ease; 
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f1115; color: #e2e8f0; background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%); background-attachment: fixed; }
+        .glass { background: rgba(30, 35, 45, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+        .white-card { background: #ffffff; color: #1a1d23; border-radius: 1.5rem; transition: all 0.3s ease; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .white-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); }
-
-        .input-field { 
-            background: #1e232d;
-            border: 1px solid #334155; 
-            border-radius: 1rem; 
-            padding: 1.15rem; 
-            width: 100%; 
-            outline: none; 
-            color: #f8fafc;
-        }
-
+        .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; outline: none; color: #f8fafc; }
         .status-glow-red { border-left: 6px solid #ef4444 !important; }
         .status-glow-green { border-left: 6px solid #10b981 !important; }
         .status-glow-yellow { border-left: 6px solid #f59e0b !important; }
-        
         .trophy-active { color: #facc15; filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.6)); }
-
         .sync-success { background: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #10b981 !important; }
         .sync-error { background: rgba(244, 63, 94, 0.1) !important; border-color: rgba(244, 63, 94, 0.3) !important; color: #f43f5e !important; }
-
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-
-        /* QR Code Container Styling */
-        #qrcode-container {
-            background: white;
-            padding: 10px;
-            border-radius: 12px;
-            display: inline-block;
-            margin-top: 15px;
-        }
+        #qr-code-space { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-top: 10px; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -108,13 +63,13 @@
                     <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Sync Dataset</span>
                     <input type="file" id="fileInput" class="hidden" accept=".xlsx">
                 </div>
-                <button onclick="location.reload()" class="glass p-4 rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all border border-rose-500/20">
-                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                <button onclick="location.href=window.location.pathname" class="glass p-4 rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all border border-rose-500/20" title="Logout">
+                    <i data-lucide="power" class="w-5 h-5"></i>
                 </button>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12" id="adminFilters">
             <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs tracking-widest">
                 <option value="">Select Region</option>
                 <option value="CPR">CPR (Central)</option><option value="NPR">NPR (North)</option>
@@ -132,12 +87,12 @@
             </div>
             <section id="territorySection" class="hidden"><div id="territoryGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div></section>
             <section id="marketSection" class="hidden">
-                <div class="mb-8"><button onclick="showMarkets(currentTerritory)" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back</button></div>
+                <div class="mb-8" id="marketBackBtn"><button onclick="showMarkets(currentTerritory)" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back</button></div>
                 <div id="marketGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div>
             </section>
             <section id="shopSection" class="hidden">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-                    <button id="backBtn" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back to Markets</button>
+                    <button id="backBtn" onclick="showMarkets(currentTerritory)" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] tracking-widest hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4 text-blue-500"></i> Back to Markets</button>
                     <div class="relative w-full md:w-64"><i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400"></i><input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass !bg-transparent border-slate-700 rounded-full pl-10 pr-6 py-2 text-xs font-bold w-full text-white"></div>
                 </div>
                 <div id="shopList" class="grid gap-3"></div>
@@ -147,7 +102,7 @@
 
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div class="flex justify-end mb-8"><button id="closeBtn" onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE VIEW <i data-lucide="x" class="w-5 h-5"></i></button></div>
+            <div class="flex justify-end mb-8" id="modalCloseContainer"><button id="closeBtn" onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE VIEW <i data-lucide="x" class="w-5 h-5"></i></button></div>
             <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
         </div>
     </div>
@@ -155,7 +110,6 @@
     <script>
         const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd";
         let GITHUB_TOKEN = ""; 
-
         let performanceData = [];
         let currentTerritory = '';
         const hierarchyData = {"CPR":{"Lahore":{"Kasur":["Kasur"],"Mughalpura":["Lahore"],"Gulberg":["Lahore"],"DHA":["Lahore"],"Raiwind":["Lahore"],"Shahdara":["Shahdara"],"Samanabad":["Lahore"],"Islampura":["Lahore"],"Railway Station":["Lahore"],"Mall Road":["Lahore"],"Wall City":["Lahore"],"Model Town":["Lahore"],"Township":["Lahore"]},"Faisalabad":{"Jhang":["AP Sial","Jhang"],"Pensera":["AP Banglow","Bhowana","Pensera"],"Rabwah":["Rabwah"],"Faisalabad-A":["Faisalabad"],"Faisalabad-B":["Faisalabad"],"Faisalabad-C":["Faisalabad"],"Toba Tek Singh":["Gojra","Shorkot","Toba Tek Singh"],"Jaranwala":["Jaranwala"],"MoreKhunda":["MoreKhunda"],"Shahkot":["Shahkot"],"Samundri":["Mureedwala","Samundri","Tandlianwala"]},"Gujranwala":{"Sialkot":["Daska","Sialkot"],"Daska":["Daska","Pasrur","Sambrial"],"Narowal":["Narang Mandi","Narowal","Shakargarh","Zafarwal"],"Wazirabad":["Ali Pur Chattha","Qilla Didar Singh","Wazirabad"],"Gujranwala-A":["Gujranwala"],"Gujranwala-B":["Gujranwala","Gujranwala Cantt"],"Hafizabad":["Hafizabad","Nowshera Virkan","Pindi Bhattian"],"Sheikhupura":["Farooqabad","Khanqa Dogran","Sheikhupura"],"Kamoke":["Kamoke","Muridke"]}},"NPR":{"Islamabad":{"Chakwal":["Chakwal"],"Talagang":["Fateh Jang","Talagang"],"Murree":["Gujar Khan","Kahuta","Kallar","Murree"],"Islamabad West":["Islamabad"],"Islamabad Suburb":["Islamabad"],"Islamabad East":["Islamabad"],"Rawalpindi A":["Rawalpindi"],"Rawalpindi B":["Rawalpindi"],"Rawalpindi C":["Rawalpindi"]},"Jhelum":{"Gujrat":["Daulat Nagar","Gujrat","Jalalpur"],"Dinga":["Lalamusa","Phalia"],"Mirpur":["Islamghar","Mirpur"],"Mandibhaudin":["Khewra","Mandi Bahauddin","PDKhan","Pinanwal"],"Jhelum":["Jhelum"]},"Northern Area":{"Abbottabad":["Abbottabad","Haripur"],"Wah":["Attock","Taxila","Wah Cantt"],"Muzaffarabad":["Bagh","Muzaffarabad"],"Mansehra":["Balakot","Besham","Mansehra"],"Rawalakot":["F Kahutta","Hajeera","Rawalakot"],"Gilgit":["Gilgit","Skardu"],"Kotli":["Kotli","Plandri"]},"Peshawar":{"DI Khan":["Bannu","DIKhan","Wana"],"Minghora":["Batkhela","Chitral","Mingora","Timergara"],"Peshawar B":["Charsadda","Peshawar"],"Kohat":["Hangu","Karak","Kohat"],"Mardan":["Mardan","Nowshera","Swabi"],"Peshawar A":["Peshawar"]},"Sargodha":{"Bhalwal":["Bhalwal","Bhera","Kotmomin"],"Mianwali":["Isakhel","Mianwali","Quaidabad","Rangpur"],"Joharabad":["Khushab","Sillanwali"],"Sargodha A":["Sargodha"],"Sargodha B":["Sargodha"]}},"SPR":{"Bahawalpur":{"Khanbela":["AP East","Khanbela"],"Bahawalpur":["Bahawalpur"],"Chishtian":["Chishtian"],"Yazman":["Faqirwali","Yazman"],"Lodhran":["Jalalpur Pirwala","Lodhran"],"RYK":["Rahim Yar Khan"]},"DG Khan":{"Bhakkar":["Bhakkar"],"Layyah":["Layyah"],"Kot Addu":["Chowkmunda","Kot Addu","Taunsa"],"Rajanpur":["Fazilpur","Jampur","Rajanpur","Rojhan"],"Muzaffargarh":["Jatoi","Muzafargarh","Rohilanwali"],"DG Khan":["DG Khan","Kot Chutta","Sakhi Sarwar"]},"Sukkur":{"Khairpur":["Choondko","Gambat","Khairpur Mirs","Pir Jo Goth"],"Jacobabad":["Dera Allah Yar","JACOBABAD","Kandhkot","Kandhkot","Kashmore","Usta Muhammad"],"Ghotki":["Ghotki","Mirpur Mathelo","Rohri","UBARO"],"Sukkur":["Shikarpur","Sukkur","Thull"]},"Sahiwal":{"Sahiwal":["Sahiwal"],"Arifwala":["Arifwala","Bahawalnagar"],"Chichawatni":["Chichawatni","Kamalia"],"Pakpattan":["Depalpur","Minchinabad","Pakpattan","Theeng More"],"Pattoki":["Pattoki","Theeng More"],"Okara":["Okara","Renala Khurd"]},"Multan":{"Burewala":["Burewala","Luddan"],"Dunyapur":["Dunyapur","Mailsi"],"Vehari":["Jahanian","Vehari"],"Kabirwala":["Kabirwala"],"Khanewal":["Khanewal"],"Multan":["Multan"],"Mian Channu":["Mianchanu","Pir Mahal"]}},"S&B":{"Hyderabad":{"Badin Territory":["Badin","Golrachi","Matli","Tando Muhammad Khan"],"Thar Territory":["Digri","Kunri","Naukot","Umerkot"],"Hyderabad Territory":["Hyderabad","Jamshoro","Kotri"],"Mirpurkhas Territory":["Khipro","Mirpurkhas","Tando Allahyar"],"Thatta Territory":["Nooriabad","Thatta"],"TandoAdam Territory":["SP Chakar","Saeedabad","Sanghar","Shahdadpur","Tando Adam"]},"Karachi":{"DHA":["Karachi"],"GIB":["Karachi"],"KBR":["Karachi"],"KRG":["Karachi"],"LDI":["Karachi"],"MLR":["Karachi"],"MTV":["Karachi"],"NKR":["Karachi"],"OLC":["Karachi"]},"Nawabshah":{"Naushero Territory":["Bhiria","Kandiaro","Mehrabpur","Moro","Naushero Feroze","Nawabshah","Qazi Ahmed"],"Dadu Territory":["Dadu","Khairpur Nathan Shah","Mehar","Sann","Sehwan"],"Nawabshah":["Daur","Nawabshah","Qazi Ahmed"],"Nawabshah Territory":["Nawabshah"],"Kamber Territory":["Kamber Ali khan","Naseerabad","Shahdad kot"],"Larkana Territory":["Larkana","Naudero","Ratodero"]},"Quetta":{"Coastal Territory":["Gwadar","Uthal"],"Khuzdar Territory":["Khuzdar","Mastung"],"Lorlai Territory":["Loralai","Qilla Saifullah","ZHOB"],"Quetta B Territory":["Pishin"],"Quetta A Territory":["Quetta"]}}};
@@ -178,13 +132,7 @@
         }
 
         async function pushToCloud(data) {
-            if (!GITHUB_TOKEN) {
-                GITHUB_TOKEN = prompt("Enter your GitHub Personal Access Token (classic) with 'gist' scope:");
-                if (!GITHUB_TOKEN) return; 
-            }
-            const btn = document.getElementById('syncBtnContainer');
-            const icon = document.getElementById('syncIcon');
-            const text = document.getElementById('syncText');
+            if (!GITHUB_TOKEN) { GITHUB_TOKEN = prompt("Enter your GitHub Personal Access Token (classic) with 'gist' scope:"); if (!GITHUB_TOKEN) return; }
             document.getElementById('syncIndicator').classList.remove('hidden');
             try {
                 const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
@@ -192,24 +140,9 @@
                     headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ files: { "data.json": { content: JSON.stringify(data) } } })
                 });
-                if(res.ok) {
-                    performanceData = data;
-                    btn.classList.add('sync-success');
-                    icon.classList.replace('text-blue-400', 'text-emerald-400');
-                    text.classList.replace('text-blue-400', 'text-emerald-400');
-                    text.innerText = "Cloud Synced";
-                    alert("Cloud Sync Successful");
-                } else { 
-                    if (res.status === 401) GITHUB_TOKEN = "";
-                    throw new Error(res.statusText);
-                }
-            } catch (e) {
-                btn.classList.add('sync-error');
-                icon.classList.replace('text-blue-400', 'text-rose-400');
-                text.classList.replace('text-blue-400', 'text-rose-400');
-                text.innerText = "Sync Failed";
-                alert("Sync Failed - " + e.message);
-            }
+                if(res.ok) { performanceData = data; alert("Cloud Sync Successful"); } 
+                else { if (res.status === 401) GITHUB_TOKEN = ""; throw new Error(res.statusText); }
+            } catch (e) { alert("Sync Failed - " + e.message); }
             document.getElementById('syncIndicator').classList.add('hidden');
         }
 
@@ -233,11 +166,7 @@
         };
 
         function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); }
-        function getExcelVal(row, key) {
-            const target = norm(key);
-            for (let k in row) { if (norm(k).includes(target)) return row[k]; }
-            return "";
-        }
+        function getExcelVal(row, key) { const target = norm(key); for (let k in row) { if (norm(k).includes(target)) return row[k]; } return ""; }
 
         function updateAreas() {
             const reg = document.getElementById('regionSelect').value;
@@ -269,25 +198,17 @@
         }
 
         function showShops(mName) {
-            hideAll();
-            document.getElementById('shopSection').classList.remove('hidden');
+            hideAll(); document.getElementById('shopSection').classList.remove('hidden');
             const shops = performanceData.filter(r => norm(getExcelVal(r, 'Market')).includes(norm(mName)));
             document.getElementById('shopList').innerHTML = shops.map(r => {
                 const target = parseFloat(getExcelVal(r, 'Target')) || 0;
                 const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
                 const status = actual >= (target/30)*new Date().getDate() ? 'status-glow-green' : (actual >= (target/30)*new Date().getDate()*0.8 ? 'status-glow-yellow' : 'status-glow-red');
-                const achieved = target > 0 && actual >= target;
-                return `
-                <div onclick="openDrilldown('${getExcelVal(r, 'Bizom ID')}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${status}">
+                return `<div onclick="openDrilldown('${getExcelVal(r, 'Bizom ID')}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer hover:scale-[1.01] transition-all ${status}">
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center"><i data-lucide="store" class="w-5 h-5 text-blue-600"></i></div>
-                        <div>
-                            <h4 class="text-sm font-800 text-slate-900 uppercase italic flex items-center gap-2">${getExcelVal(r, 'Shop Name') || 'Retailer'} ${achieved ? '<i data-lucide="award" class="w-5 h-5 trophy-active"></i>' : ''}</h4>
-                            <p class="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">BIZOM ID: ${getExcelVal(r, 'Bizom ID')}</p>
-                        </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300"></i>
-                </div>`}).join('');
+                        <div><h4 class="text-sm font-800 text-slate-900 uppercase italic">${getExcelVal(r, 'Shop Name')}</h4><p class="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wider">BIZOM ID: ${getExcelVal(r, 'Bizom ID')}</p></div>
+                    </div><i data-lucide="chevron-right" class="w-5 h-5 text-slate-300"></i></div>`}).join('');
             lucide.createIcons();
         }
 
@@ -297,86 +218,58 @@
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
             const payout = getExcelVal(r, 'Amount') || getExcelVal(r, 'Total Payout') || '0';
-            const daysLeft = 30 - new Date().getDate() || 1;
-            const rrr = ((target - actual) / daysLeft).toFixed(1);
+            const rrr = ((target - actual) / (30 - new Date().getDate() || 1)).toFixed(1);
             
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
                 <div class="text-center mb-12">
-                    <p class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.4em] mb-2">Retailer Analysis</p>
                     <h2 class="text-4xl md:text-6xl font-800 text-white italic tracking-tighter uppercase mb-4">${getExcelVal(r, 'Shop Name')}</h2>
-                    <div class="flex flex-col items-center gap-3">
-                        <div class="inline-flex items-center gap-3 px-6 py-2 bg-slate-800/50 rounded-full border border-slate-700">
-                            <i data-lucide="fingerprint" class="w-4 h-4 text-blue-500"></i><span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">BIZOM ID: ${bizId}</span>
-                        </div>
-                        <div id="qrcode-container"></div>
+                    <div class="flex flex-col items-center gap-2">
+                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">BIZOM ID: ${bizId}</span>
+                        <div id="qr-code-space"></div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><i data-lucide="target" class="w-5 h-5 text-blue-500 mx-auto mb-3"></i><span class="text-[9px] text-slate-500 font-bold uppercase block">Target</span><p class="text-2xl font-800">${target}</p></div>
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><i data-lucide="trending-up" class="w-5 h-5 text-emerald-500 mx-auto mb-3"></i><span class="text-[9px] text-slate-500 font-bold uppercase block">Actual</span><p class="text-2xl font-800 text-emerald-500">${actual}</p></div>
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><i data-lucide="zap" class="w-5 h-5 text-amber-500 mx-auto mb-3"></i><span class="text-[9px] text-slate-500 font-bold uppercase block">Daily RRR</span><p class="text-2xl font-800 text-slate-300">${rrr}</p></div>
-                    <div class="bg-[#111419] p-6 rounded-3xl text-center border border-white/5"><i data-lucide="alert-triangle" class="w-5 h-5 text-rose-500 mx-auto mb-3"></i><span class="text-[9px] text-slate-500 font-bold uppercase block">Deficit</span><p class="text-2xl font-800 text-rose-500">${(target-actual).toFixed(0)}</p></div>
-                    <div class="bg-blue-600/10 p-6 rounded-3xl text-center border border-blue-500/20 col-span-2 md:col-span-1"><i data-lucide="banknote" class="w-5 h-5 text-blue-400 mx-auto mb-3"></i><span class="text-[9px] text-blue-400 font-bold uppercase block">Payout</span><p class="text-2xl font-800 text-white">${payout}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center"><span class="text-[9px] text-slate-500 font-bold uppercase block">Target</span><p class="text-2xl font-800">${target}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center"><span class="text-[9px] text-slate-500 font-bold uppercase block">Actual</span><p class="text-2xl font-800 text-emerald-500">${actual}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center"><span class="text-[9px] text-slate-500 font-bold uppercase block">RRR</span><p class="text-2xl font-800 text-amber-500">${rrr}</p></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center"><span class="text-[9px] text-slate-500 font-bold uppercase block">Deficit</span><p class="text-2xl font-800 text-rose-500">${(target-actual).toFixed(0)}</p></div>
+                    <div class="bg-blue-600/10 p-6 rounded-3xl text-center"><span class="text-[9px] text-blue-400 font-bold uppercase block">Payout</span><p class="text-2xl font-800 text-white">${payout}</p></div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="skuChart"></canvas></div></div>
-                    <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="drillChart"></canvas></div></div>
+                    <div class="bg-[#111419] rounded-[2.5rem] p-8 h-64"><canvas id="skuChart"></canvas></div>
+                    <div class="bg-[#111419] rounded-[2.5rem] p-8 h-64"><canvas id="drillChart"></canvas></div>
                 </div>`;
 
-            // GENERATE QR CODE FOR THIS BIZOM ID
-            const siteUrl = window.location.href.split('?')[0];
-            new QRCode(document.getElementById("qrcode-container"), {
-                text: `${siteUrl}?id=${bizId}`,
-                width: 100,
-                height: 100,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            // Auto-Generate QR
+            const baseUrl = window.location.href.split('?')[0];
+            new QRCode(document.getElementById("qr-code-space"), { text: `${baseUrl}?id=${bizId}`, width: 120, height: 120 });
 
-            new Chart(document.getElementById('skuChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['6mg','10mg','14mg','17mg'],
-                    datasets: [{ data: [getExcelVal(r,'6mg'),getExcelVal(r,'10mg'),getExcelVal(r,'14mg'),getExcelVal(r,'17mg')], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-            new Chart(document.getElementById('drillChart'), {
-                type: 'bar',
-                data: { labels: ['TGT', 'ACT'], datasets: [{ data: [target, actual], backgroundColor: ['#1e232d', '#10b981'], borderRadius: 15 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
+            new Chart(document.getElementById('skuChart'), { type: 'bar', data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [getExcelVal(r,'6mg'),getExcelVal(r,'10mg'),getExcelVal(r,'14mg'),getExcelVal(r,'17mg')], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            new Chart(document.getElementById('drillChart'), { type: 'bar', data: { labels: ['TGT', 'ACT'], datasets: [{ data: [target, actual], backgroundColor: ['#1e232d', '#10b981'], borderRadius: 15 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
             lucide.createIcons();
         }
 
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
         function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
-        function filterShops() {
-            const term = document.getElementById('shopSearch').value.toLowerCase();
-            Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
-        }
+        function filterShops() { const term = document.getElementById('shopSearch').value.toLowerCase(); Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none'); }
 
+        // QR Auto-Loader & Lock Logic
         (function() {
             const qrInterval = setInterval(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const retailerId = urlParams.get('id');
                 if (retailerId && window.performanceData && window.performanceData.length > 0) {
                     clearInterval(qrInterval);
-                    const exists = window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(retailerId));
-                    if (exists) {
+                    if (window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(retailerId))) {
                         document.getElementById('loginScreen').classList.add('hidden');
                         document.getElementById('mainApp').classList.remove('hidden');
                         openDrilldown(retailerId);
-                        const syncBtn = document.getElementById('syncBtnContainer');
-                        if (syncBtn) syncBtn.style.display = 'none';
-                        const closeBtn = document.getElementById('closeBtn');
-                        if (closeBtn) closeBtn.style.display = 'none';
-                        const backButtons = document.querySelectorAll('button[onclick*="showMarkets"], #backBtn');
-                        backButtons.forEach(btn => btn.style.display = 'none');
-                        document.getElementById('regionSelect').disabled = true;
-                        document.getElementById('areaSelect').disabled = true;
+                        // LOCK UI FOR RETAILER
+                        document.getElementById('syncBtnContainer').style.display = 'none';
+                        document.getElementById('modalCloseContainer').style.display = 'none';
+                        document.getElementById('adminFilters').style.display = 'none';
+                        document.querySelector('button[title="Logout"]').style.display = 'none';
                     }
                 }
             }, 500);
