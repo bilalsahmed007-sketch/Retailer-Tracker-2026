@@ -198,8 +198,10 @@
                 const bizId = getExcelVal(r, 'Bizom ID');
                 const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
                 const isWinner = actual >= target && target > 0;
-                const displayName = getExcelVal(r, 'Shop Name');
-                const finalShopTitle = (displayName && displayName !== "0") ? displayName : "RETAILER";
+                
+                // FIXED NAME LOGIC: Catch string "0", number 0, and nulls
+                const rawName = getExcelVal(r, 'Shop Name');
+                const finalShopTitle = (rawName && String(rawName).trim() !== "0") ? rawName : "RETAILER";
 
                 return `
                 <div onclick="openDrilldown('${bizId}')" class="glass group relative p-5 rounded-[2rem] flex justify-between items-center cursor-pointer mb-4 transition-all duration-300 hover:scale-[1.01] hover:bg-white/5 ${isWinner ? 'status-glow-green' : 'status-glow-red'}">
@@ -242,8 +244,10 @@
             const currentBizId = getExcelVal(r, 'Bizom ID');
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
-            const displayName = getExcelVal(r, 'Shop Name');
-            const finalTitle = (displayName && displayName !== "0") ? displayName : "RETAILER";
+            
+            // FIXED HEADER LOGIC: Strict "0" check
+            const rawName = getExcelVal(r, 'Shop Name');
+            const finalTitle = (rawName && String(rawName).trim() !== "0") ? rawName : "RETAILER";
             
             const now = new Date();
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
