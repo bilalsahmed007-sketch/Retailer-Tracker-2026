@@ -8,6 +8,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
         
@@ -58,6 +59,15 @@
 
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+        /* QR Code Container Styling */
+        #qrcode-container {
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -92,10 +102,15 @@
                     <span class="flex items-center gap-2"><i data-lucide="timer" class="w-4 h-4 text-rose-500"></i> <span id="topDaysLeft">-- Days Left</span></span>
                 </div>
             </div>
-            <div id="syncBtnContainer" onclick="document.getElementById('fileInput').click()" class="glass px-6 py-4 rounded-2xl cursor-pointer transition-all flex items-center gap-4 border border-white/5">
-                <i id="syncIcon" data-lucide="refresh-ccw" class="w-5 h-5 text-blue-400"></i>
-                <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Sync Dataset</span>
-                <input type="file" id="fileInput" class="hidden" accept=".xlsx">
+            <div class="flex items-center gap-3">
+                <div id="syncBtnContainer" onclick="document.getElementById('fileInput').click()" class="glass px-6 py-4 rounded-2xl cursor-pointer transition-all flex items-center gap-4 border border-white/5">
+                    <i id="syncIcon" data-lucide="refresh-ccw" class="w-5 h-5 text-blue-400"></i>
+                    <span id="syncText" class="text-xs font-bold uppercase tracking-wider text-blue-400">Sync Dataset</span>
+                    <input type="file" id="fileInput" class="hidden" accept=".xlsx">
+                </div>
+                <button onclick="location.reload()" class="glass p-4 rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all border border-rose-500/20">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                </button>
             </div>
         </header>
 
@@ -167,19 +182,16 @@
                 GITHUB_TOKEN = prompt("Enter your GitHub Personal Access Token (classic) with 'gist' scope:");
                 if (!GITHUB_TOKEN) return; 
             }
-
             const btn = document.getElementById('syncBtnContainer');
             const icon = document.getElementById('syncIcon');
             const text = document.getElementById('syncText');
             document.getElementById('syncIndicator').classList.remove('hidden');
-            
             try {
                 const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
                     method: 'PATCH',
                     headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ files: { "data.json": { content: JSON.stringify(data) } } })
                 });
-                
                 if(res.ok) {
                     performanceData = data;
                     btn.classList.add('sync-success');
@@ -293,8 +305,11 @@
                 <div class="text-center mb-12">
                     <p class="text-[10px] text-blue-400 font-bold uppercase tracking-[0.4em] mb-2">Retailer Analysis</p>
                     <h2 class="text-4xl md:text-6xl font-800 text-white italic tracking-tighter uppercase mb-4">${getExcelVal(r, 'Shop Name')}</h2>
-                    <div class="inline-flex items-center gap-3 px-6 py-2 bg-slate-800/50 rounded-full border border-slate-700">
-                        <i data-lucide="fingerprint" class="w-4 h-4 text-blue-500"></i><span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">BIZOM ID: ${bizId}</span>
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="inline-flex items-center gap-3 px-6 py-2 bg-slate-800/50 rounded-full border border-slate-700">
+                            <i data-lucide="fingerprint" class="w-4 h-4 text-blue-500"></i><span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">BIZOM ID: ${bizId}</span>
+                        </div>
+                        <div id="qrcode-container"></div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
@@ -308,6 +323,18 @@
                     <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="skuChart"></canvas></div></div>
                     <div class="bg-[#111419] rounded-[2.5rem] p-8 border border-white/5"><div class="h-64"><canvas id="drillChart"></canvas></div></div>
                 </div>`;
+
+            // GENERATE QR CODE FOR THIS BIZOM ID
+            const siteUrl = window.location.href.split('?')[0];
+            new QRCode(document.getElementById("qrcode-container"), {
+                text: `${siteUrl}?id=${bizId}`,
+                width: 100,
+                height: 100,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
             new Chart(document.getElementById('skuChart'), {
                 type: 'bar',
                 data: {
@@ -331,43 +358,23 @@
             Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
         }
 
-        /**
-         * QR AUTO-LOADER LISTENER
-         * Sit at the end to ensure all base functions are defined first.
-         */
         (function() {
             const qrInterval = setInterval(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const retailerId = urlParams.get('id');
-
-                // Wait for Cloud Sync to finish loading data into the window
                 if (retailerId && window.performanceData && window.performanceData.length > 0) {
                     clearInterval(qrInterval);
-
                     const exists = window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(retailerId));
-
                     if (exists) {
-                        // 1. Skip Login Screen
                         document.getElementById('loginScreen').classList.add('hidden');
                         document.getElementById('mainApp').classList.remove('hidden');
-
-                        // 2. Open specific view
                         openDrilldown(retailerId);
-
-                        // 3. Lock Interface for Retailer
-                        // Hide Sync Button
                         const syncBtn = document.getElementById('syncBtnContainer');
                         if (syncBtn) syncBtn.style.display = 'none';
-
-                        // Hide Close button to prevent them returning to main admin area
                         const closeBtn = document.getElementById('closeBtn');
                         if (closeBtn) closeBtn.style.display = 'none';
-
-                        // Hide the Back buttons in the main app sections
                         const backButtons = document.querySelectorAll('button[onclick*="showMarkets"], #backBtn');
                         backButtons.forEach(btn => btn.style.display = 'none');
-                        
-                        // Disable region/area selection
                         document.getElementById('regionSelect').disabled = true;
                         document.getElementById('areaSelect').disabled = true;
                     }
