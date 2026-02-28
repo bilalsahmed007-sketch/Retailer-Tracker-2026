@@ -132,16 +132,13 @@
 
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115]/98 backdrop-blur-xl hidden overflow-y-auto">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div class="flex justify-end mb-8"><button onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE VIEW <i data-lucide="x" class="w-5 h-5"></i></button></div>
+            <div class="flex justify-end mb-8"><button id="closeBtn" onclick="closeModal()" class="flex items-center gap-2 text-slate-400 hover:text-rose-500 uppercase font-bold text-xs tracking-widest transition-colors">CLOSE VIEW <i data-lucide="x" class="w-5 h-5"></i></button></div>
             <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
         </div>
     </div>
 
     <script>
-        // REPLACE THIS WITH YOUR NEW GIST ID
         const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd";
-        
-        // LEAVE THIS BLANK - Script will ask for it when you click Sync
         let GITHUB_TOKEN = ""; 
 
         let performanceData = [];
@@ -166,7 +163,6 @@
         }
 
         async function pushToCloud(data) {
-            // PROMPT FOR TOKEN IF MISSING
             if (!GITHUB_TOKEN) {
                 GITHUB_TOKEN = prompt("Enter your GitHub Personal Access Token (classic) with 'gist' scope:");
                 if (!GITHUB_TOKEN) return; 
@@ -192,7 +188,6 @@
                     text.innerText = "Cloud Synced";
                     alert("Cloud Sync Successful");
                 } else { 
-                    // Reset token if unauthorized so user can try again
                     if (res.status === 401) GITHUB_TOKEN = "";
                     throw new Error(res.statusText);
                 }
@@ -335,6 +330,50 @@
             const term = document.getElementById('shopSearch').value.toLowerCase();
             Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
         }
+
+        /**
+         * QR AUTO-LOADER LISTENER
+         * Sit at the end to ensure all base functions are defined first.
+         */
+        (function() {
+            const qrInterval = setInterval(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const retailerId = urlParams.get('id');
+
+                // Wait for Cloud Sync to finish loading data into the window
+                if (retailerId && window.performanceData && window.performanceData.length > 0) {
+                    clearInterval(qrInterval);
+
+                    const exists = window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(retailerId));
+
+                    if (exists) {
+                        // 1. Skip Login Screen
+                        document.getElementById('loginScreen').classList.add('hidden');
+                        document.getElementById('mainApp').classList.remove('hidden');
+
+                        // 2. Open specific view
+                        openDrilldown(retailerId);
+
+                        // 3. Lock Interface for Retailer
+                        // Hide Sync Button
+                        const syncBtn = document.getElementById('syncBtnContainer');
+                        if (syncBtn) syncBtn.style.display = 'none';
+
+                        // Hide Close button to prevent them returning to main admin area
+                        const closeBtn = document.getElementById('closeBtn');
+                        if (closeBtn) closeBtn.style.display = 'none';
+
+                        // Hide the Back buttons in the main app sections
+                        const backButtons = document.querySelectorAll('button[onclick*="showMarkets"], #backBtn');
+                        backButtons.forEach(btn => btn.style.display = 'none');
+                        
+                        // Disable region/area selection
+                        document.getElementById('regionSelect').disabled = true;
+                        document.getElementById('areaSelect').disabled = true;
+                    }
+                }
+            }, 500);
+        })();
     </script>
 </body>
 </html>
