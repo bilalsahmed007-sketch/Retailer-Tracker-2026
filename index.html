@@ -13,12 +13,12 @@
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f1115; color: #e2e8f0; background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%); background-attachment: fixed; }
         .glass { background: rgba(30, 35, 45, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; outline: none; color: #f8fafc; }
+        .status-glow-red { border-left: 6px solid #ef4444 !important; box-shadow: -10px 0 20px -10px rgba(239, 68, 68, 0.2); }
+        .status-glow-green { border-left: 6px solid #10b981 !important; box-shadow: -10px 0 20px -10px rgba(16, 185, 129, 0.2); }
+        #qr-code-space { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-top: 10px; }
         .white-card { background: #ffffff; color: #1a1d23; border-radius: 1.5rem; transition: all 0.3s ease; cursor: pointer; }
         .white-card:hover { transform: translateY(-5px); }
-        .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; outline: none; color: #f8fafc; }
-        .status-glow-red { border-left: 8px solid #ef4444 !important; }
-        .status-glow-green { border-left: 8px solid #10b981 !important; }
-        #qr-code-space { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-top: 10px; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -72,7 +72,7 @@
             <section id="shopSection" class="hidden">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
                     <button onclick="showMarkets(currentTerritory)" class="flex items-center gap-2 text-slate-500 font-bold uppercase text-[10px] hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4"></i> Back</button>
-                    <input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none border-none w-full md:w-64">
+                    <input type="text" id="shopSearch" oninput="filterShops()" placeholder="SEARCH SHOP..." class="glass px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest outline-none border-none w-full md:w-64 text-white">
                 </div>
                 <div id="shopList" class="grid gap-3"></div>
             </section>
@@ -128,7 +128,8 @@
 
                         if (response.ok) {
                             const btn = document.getElementById('syncBtnContainer');
-                            btn.style.borderColor = "#10b981"; btn.style.color = "#10b981";
+                            btn.style.borderColor = "#10b981"; 
+                            btn.style.background = "rgba(16, 185, 129, 0.1)";
                             document.getElementById('syncText').innerText = "Cloud Synced";
                             document.getElementById('syncText').style.color = "#10b981";
                             document.getElementById('syncIcon').setAttribute('data-lucide', 'check-circle-2');
@@ -195,33 +196,38 @@
                 const target = parseFloat(getExcelVal(r, 'Target')) || 0;
                 const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
                 const bizId = getExcelVal(r, 'Bizom ID');
-                const rrr = ((target - actual) / daysRemaining).toFixed(1);
+                const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
                 const isWinner = actual >= target && target > 0;
 
                 return `
-                <div onclick="openDrilldown('${bizId}')" class="bg-white p-6 rounded-2xl flex justify-between items-center cursor-pointer ${isWinner ? 'status-glow-green' : 'status-glow-red'} mb-3 shadow-sm transition-all">
+                <div onclick="openDrilldown('${bizId}')" class="glass group relative p-5 rounded-[2rem] flex justify-between items-center cursor-pointer mb-4 transition-all duration-300 hover:scale-[1.01] hover:bg-white/5 ${isWinner ? 'status-glow-green' : 'status-glow-red'}">
                     <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-2">
-                            <i data-lucide="tag" class="w-4 h-4 text-indigo-500"></i>
-                            <h4 class="text-xl font-800 text-slate-900 uppercase italic leading-tight">${getExcelVal(r, 'Shop Name')}</h4>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="p-2 bg-indigo-500/10 rounded-lg"><i data-lucide="tag" class="w-4 h-4 text-indigo-400"></i></div>
+                            <h4 class="text-xl font-800 text-white italic uppercase tracking-tighter">${getExcelVal(r, 'Shop Name')}</h4>
                         </div>
-                        <p class="text-lg font-900 text-slate-600 uppercase flex items-center gap-2">
-                            <i data-lucide="target" class="w-4 h-4 text-slate-400"></i> TGT: <span class="text-slate-900">${target}</span>
-                            <span class="mx-1 text-slate-300">|</span>
-                            <i data-lucide="trending-up" class="w-4 h-4 text-slate-400"></i> ACT: <span class="${isWinner ? 'text-emerald-600' : 'text-rose-600'}">${actual}</span>
-                        </p>
-                        <p class="text-sm font-800 text-blue-600 uppercase flex items-center gap-2 mt-2">
-                            <i data-lucide="zap" class="w-4 h-4 text-blue-500"></i> REQ. RUN RATE: <span class="bg-blue-50 px-2 rounded">${Math.max(0, rrr)} / DAY</span>
-                        </p>
-                    </div>
-                    <div class="flex flex-col items-center justify-center gap-1 min-w-[90px] border-l border-slate-100 pl-4">
-                        <div class="p-2 bg-indigo-50 rounded-xl mb-1"><i data-lucide="store" class="w-7 h-7 text-indigo-600"></i></div>
-                        <div class="flex items-center gap-1">
-                            <span class="text-[11px] font-900 text-slate-500">ID: ${bizId}</span>
-                            ${isWinner ? '<i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>' : ''}
+                        <div class="flex flex-wrap items-center gap-4">
+                            <div class="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
+                                <span class="text-[9px] text-slate-500 font-800 uppercase block mb-1">Target</span>
+                                <div class="flex items-center gap-2"><i data-lucide="target" class="w-3 h-3 text-slate-400"></i><span class="text-lg font-800 text-white">${target}</span></div>
+                            </div>
+                            <div class="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
+                                <span class="text-[9px] text-slate-500 font-800 uppercase block mb-1">Actual</span>
+                                <div class="flex items-center gap-2"><i data-lucide="trending-up" class="w-3 h-3 ${isWinner ? 'text-emerald-400' : 'text-rose-400'}"></i><span class="text-lg font-800 ${isWinner ? 'text-emerald-400' : 'text-rose-400'}">${actual}</span></div>
+                            </div>
+                            <div class="bg-blue-500/10 px-4 py-2 rounded-xl border border-blue-500/20">
+                                <span class="text-[9px] text-blue-400 font-800 uppercase block mb-1">Req. Run Rate</span>
+                                <div class="flex items-center gap-2"><i data-lucide="zap" class="w-3 h-3 text-blue-400 animate-pulse"></i><span class="text-lg font-800 text-blue-400">${rrr} <small class="text-[10px] opacity-50">/DAY</small></span></div>
+                            </div>
                         </div>
                     </div>
-                    <i data-lucide="chevron-right" class="w-5 h-5 text-slate-300 ml-2"></i>
+                    <div class="flex flex-col items-center justify-center gap-2 min-w-[100px] border-l border-white/5 ml-4 pl-4">
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full"></div>
+                            <div class="relative p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/20"><i data-lucide="shopping-cart" class="w-6 h-6 text-white"></i></div>
+                        </div>
+                        <div class="flex items-center gap-1"><span class="text-[10px] font-800 text-slate-400 uppercase tracking-widest">ID: ${bizId}</span>${isWinner ? '<i data-lucide="trophy" class="w-3 h-3 text-amber-400"></i>' : ''}</div>
+                    </div>
                 </div>`;
             }).join('');
             lucide.createIcons();
