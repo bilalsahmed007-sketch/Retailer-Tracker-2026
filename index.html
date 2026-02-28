@@ -199,11 +199,10 @@
                 const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
                 const isWinner = actual >= target && target > 0;
                 
-                // --- NEW AGGRESSIVE NAME CHECK ---
+                // ULTIMATE ZERO STRIPPER
                 const rawName = getExcelVal(r, 'Shop Name');
-                // Regex: remove all non-alphanumeric. If result is empty or just '0', use RETAILER.
-                const cleanName = String(rawName || "").replace(/[^a-zA-Z0-9]/g, "");
-                const finalShopTitle = (cleanName && cleanName !== "0") ? rawName : "RETAILER";
+                const cleanStr = String(rawName || "").trim();
+                const finalShopTitle = (cleanStr !== "0" && cleanStr !== "") ? rawName : "RETAILER";
 
                 return `
                 <div onclick="openDrilldown('${bizId}')" class="glass group relative p-5 rounded-[2rem] flex justify-between items-center cursor-pointer mb-4 transition-all duration-300 hover:scale-[1.01] hover:bg-white/5 ${isWinner ? 'status-glow-green' : 'status-glow-red'}">
@@ -232,7 +231,7 @@
                             <div class="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full"></div>
                             <div class="relative p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/20"><i data-lucide="shopping-cart" class="w-6 h-6 text-white"></i></div>
                         </div>
-                        <div class="flex items-center gap-1"><span class="text-[10px] font-800 text-slate-400 uppercase tracking-widest">ID: ${bizId}</span>${isWinner ? '<i data-lucide="trophy" class="w-3 h-3 text-amber-400"></i>' : ''}</div>
+                        <div class="flex items-center gap-1"><span class="text-[10px] font-800 text-slate-400 uppercase tracking-widest">Retailer ID: ${bizId}</span>${isWinner ? '<i data-lucide="trophy" class="w-3 h-3 text-amber-400"></i>' : ''}</div>
                     </div>
                 </div>`;
             }).join('');
@@ -247,10 +246,10 @@
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
             
-            // --- NEW AGGRESSIVE MODAL NAME CHECK ---
+            // MODAL ZERO STRIPPER
             const rawName = getExcelVal(r, 'Shop Name');
-            const cleanName = String(rawName || "").replace(/[^a-zA-Z0-9]/g, "");
-            const finalTitle = (cleanName && cleanName !== "0") ? rawName : "RETAILER";
+            const cleanStr = String(rawName || "").trim();
+            const finalTitle = (cleanStr !== "0" && cleanStr !== "") ? rawName : "RETAILER";
             
             const now = new Date();
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
