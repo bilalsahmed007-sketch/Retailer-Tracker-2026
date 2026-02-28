@@ -199,9 +199,11 @@
                 const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
                 const isWinner = actual >= target && target > 0;
                 
-                // FIXED NAME LOGIC: Catch string "0", number 0, and nulls
+                // --- NEW AGGRESSIVE NAME CHECK ---
                 const rawName = getExcelVal(r, 'Shop Name');
-                const finalShopTitle = (rawName && String(rawName).trim() !== "0") ? rawName : "RETAILER";
+                // Regex: remove all non-alphanumeric. If result is empty or just '0', use RETAILER.
+                const cleanName = String(rawName || "").replace(/[^a-zA-Z0-9]/g, "");
+                const finalShopTitle = (cleanName && cleanName !== "0") ? rawName : "RETAILER";
 
                 return `
                 <div onclick="openDrilldown('${bizId}')" class="glass group relative p-5 rounded-[2rem] flex justify-between items-center cursor-pointer mb-4 transition-all duration-300 hover:scale-[1.01] hover:bg-white/5 ${isWinner ? 'status-glow-green' : 'status-glow-red'}">
@@ -245,9 +247,10 @@
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
             
-            // FIXED HEADER LOGIC: Strict "0" check
+            // --- NEW AGGRESSIVE MODAL NAME CHECK ---
             const rawName = getExcelVal(r, 'Shop Name');
-            const finalTitle = (rawName && String(rawName).trim() !== "0") ? rawName : "RETAILER";
+            const cleanName = String(rawName || "").replace(/[^a-zA-Z0-9]/g, "");
+            const finalTitle = (cleanName && cleanName !== "0") ? rawName : "RETAILER";
             
             const now = new Date();
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
