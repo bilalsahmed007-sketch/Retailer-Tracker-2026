@@ -4,85 +4,83 @@
 
     window.onload = async () => {
         await loadCloudData();
-        document.getElementById('loader').style.display = 'none';
+        document.getElementById('loader').style.display = 'none'; [cite: 23]
         
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(window.location.search); [cite: 23]
         const rId = params.get('id');
 
         if (rId) {
-            document.getElementById('loginScreen').remove();
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('mainApp').style.opacity = "1";
-            if(document.getElementById('adminTools')) document.getElementById('adminTools').remove();
-            executeBypass(rId);
+            // If Retailer: Kill Login, Show Dashboard
+            document.getElementById('loginScreen').remove(); [cite: 24]
+            document.getElementById('mainApp').classList.remove('hidden'); [cite: 25]
+            document.getElementById('mainApp').style.opacity = "1"; [cite: 25]
+            if (document.getElementById('adminTools')) document.getElementById('adminTools').remove(); [cite: 25]
+            executeBypass(rId); [cite: 25]
         } else {
-            document.getElementById('loginScreen').style.display = 'flex';
+            // If Admin: Just show login
+            document.getElementById('loginScreen').style.display = 'flex'; [cite: 26]
         }
-        lucide.createIcons();
+        lucide.createIcons(); [cite: 26]
     };
 
     async function loadCloudData() {
         try {
-            const res = await fetch(`https://api.github.com/gists/${GIST_ID}?cb=${Date.now()}`);
-            const data = await res.json();
-            window.performanceData = JSON.parse(data.files["data.json"].content);
+            const res = await fetch(`https://api.github.com/gists/${GIST_ID}?cb=${Date.now()}`); [cite: 27]
+            const data = await res.json(); [cite: 28]
+            window.performanceData = JSON.parse(data.files["data.json"].content); [cite: 28]
         } catch (e) { console.error("Data Load Error"); }
     }
 
-    // CLEANER VALUE PICKER: Removes spaces and handles numbers
-    function getExcelVal(row, key) {
-        const k = Object.keys(row).find(x => 
-            x.toLowerCase().replace(/\s/g,'').includes(key.toLowerCase().replace(/\s/g,''))
-        );
-        let val = k ? row[k] : 0;
-        return String(val).trim(); // Always return a clean string
+    function handleLogin() {
+        if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") {
+            document.getElementById('loginScreen').remove(); [cite: 29]
+            document.getElementById('mainApp').classList.remove('hidden'); [cite: 30]
+            document.getElementById('mainApp').style.opacity = "1"; [cite: 30]
+        } else { alert("Unauthorized"); }
     }
 
-    function executeBypass(id) {
-        // CLEANING: Remove spaces from the URL ID
-        const searchId = String(id).trim();
-        
-        // SEARCHING: Match string-to-string with no spaces
-        const r = window.performanceData.find(x => {
-            const rowId = getExcelVal(x, 'Bizom ID');
-            return rowId === searchId;
-        });
+    // UPDATED: Forces clean string return to fix matching issues
+    function getExcelVal(row, key) {
+        const k = Object.keys(row).find(x => x.toLowerCase().replace(/\s/g,'').includes(key.toLowerCase().replace(/\s/g,'')));
+        const val = k ? row[k] : 0;
+        return String(val).trim(); [cite: 31]
+    }
 
+    // UPDATED: Robust comparison for Retailer ID 127394
+    function executeBypass(id) {
+        const cleanId = String(id).trim(); [cite: 32]
+        const r = window.performanceData.find(x => String(getExcelVal(x, 'Bizom ID')).trim() === cleanId); [cite: 32]
+        
         const modal = document.getElementById('detailModal');
         const target = document.getElementById('modalTarget');
-        modal.classList.remove('hidden');
+        modal.classList.remove('hidden'); [cite: 32]
         
         if (!r) {
-            target.innerHTML = `
-                <div class="text-center py-20">
-                    <h1 class="text-xl font-800 text-rose-500 uppercase">ID ${searchId} Not Found</h1>
-                    <p class="text-slate-500 mt-2 text-xs">The ID exists in the link, but is missing from the Excel Sync.</p>
-                </div>`;
+            target.innerHTML = `<div class="text-center py-20"><h1 class="text-xl font-800 text-rose-500 uppercase">RETAILER ID ${cleanId} NOT FOUND</h1><p class="text-slate-500 text-xs mt-2">Data match failed. Please check Excel ID column.</p></div>`; [cite: 33]
             return;
         }
 
-        // RENDER DASHBOARD
         target.innerHTML = `
             <div class="space-y-8">
                 <div class="text-center">
-                    <h2 class="text-4xl font-800 text-white italic uppercase tracking-tighter">${getExcelVal(r, 'Shop Name')}</h2>
-                    <p class="text-slate-500 font-bold text-[10px] mt-2 tracking-[0.4em]">ID: ${searchId}</p>
+                    <h2 class="text-4xl font-800 text-white italic uppercase tracking-tighter">${getExcelVal(r, 'Shop Name')}</h2> [cite: 34]
+                    <p class="text-slate-500 font-bold text-[10px] mt-2 tracking-[0.4em]">ID: ${cleanId}</p> [cite: 34]
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="glass p-8 rounded-[2rem] text-center border-b-4 border-blue-500">
-                        <p class="text-[10px] font-800 text-slate-500 uppercase mb-2">Monthly Target</p>
-                        <span class="text-3xl font-800 text-white">${getExcelVal(r, 'Target')}</span>
+                        <p class="text-[10px] font-800 text-slate-500 uppercase mb-2">Monthly Target</p> [cite: 35]
+                        <span class="text-3xl font-800 text-white">${getExcelVal(r, 'Target')}</span> [cite: 35]
                     </div>
                     <div class="glass p-8 rounded-[2rem] text-center border-b-4 border-emerald-500">
-                        <p class="text-[10px] font-800 text-slate-500 uppercase mb-2">Achieved</p>
-                        <span class="text-3xl font-800 text-emerald-400">${getExcelVal(r, 'Total Sales')}</span>
+                        <p class="text-[10px] font-800 text-slate-500 uppercase mb-2">Achieved</p> [cite: 36]
+                        <span class="text-3xl font-800 text-emerald-400">${getExcelVal(r, 'Total Sales')}</span> [cite: 36]
                     </div>
                 </div>
 
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 rounded-[2rem] shadow-xl text-center">
-                    <p class="text-[10px] font-800 text-white/60 uppercase mb-1">Estimated Payout</p>
-                    <span class="text-4xl font-800 text-white">Rs. ${getExcelVal(r, 'Total Payout') || 0}</span>
+                    <p class="text-[10px] font-800 text-white/60 uppercase mb-1">Estimated Payout</p> [cite: 37]
+                    <span class="text-4xl font-800 text-white">Rs. ${getExcelVal(r, 'Total Payout') || 0}</span> [cite: 38]
                 </div>
 
                 <div class="glass p-6 rounded-[2rem]">
@@ -94,26 +92,19 @@
         new Chart(document.getElementById('retailerChart'), {
             type: 'bar',
             data: {
-                labels: ['6mg', '10mg', '14mg', '17mg'],
+                labels: ['6mg', '10mg', '14mg', '17mg'], [cite: 40]
                 datasets: [{
-                    data: [getExcelVal(r,'6mg'), getExcelVal(r,'10mg'), getExcelVal(r,'14mg'), getExcelVal(r,'17mg')],
-                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
-                    borderRadius: 10
+                    label: 'Sales', [cite: 41]
+                    data: [getExcelVal(r,'6mg'), getExcelVal(r,'10mg'), getExcelVal(r,'14mg'), getExcelVal(r,'17mg')], [cite: 41]
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'], [cite: 41]
+                    borderRadius: 10 [cite: 41]
                 }]
             },
             options: { 
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } } }
+                plugins: { legend: { display: false } }, [cite: 42]
+                scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } } } [cite: 42]
             }
         });
-        lucide.createIcons();
-    }
-
-    function handleLogin() {
-        if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") {
-            document.getElementById('loginScreen').remove();
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('mainApp').style.opacity = "1";
-        } else { alert("Unauthorized"); }
+        lucide.createIcons(); [cite: 44]
     }
 </script>
