@@ -20,8 +20,8 @@
         .white-card { background: #ffffff; color: #1a1d23; border-radius: 1.5rem; transition: all 0.3s ease; cursor: pointer; }
         .white-card:hover { transform: translateY(-5px); }
 
-        /* RETAILER LOCKDOWN STYLES (Triggered when ?id= is present) */
-        body.retailer-mode { pointer-events: none !important; } /* Disable all clicks/interactivity */
+        /* RETAILER LOCKDOWN STYLES (Activated via Body Class) */
+        body.retailer-mode { pointer-events: none !important; }
         body.retailer-mode #adminFilters, 
         body.retailer-mode #syncBtnContainer,
         body.retailer-mode [onclick*="location.href"],
@@ -30,7 +30,7 @@
         body.retailer-mode header,
         body.retailer-mode #qr-code-space { display: none !important; }
         body.retailer-mode #detailModal { display: block !important; position: relative !important; z-index: 10 !important; background: transparent !important; }
-        body.retailer-mode #modalBody { border: none !important; box-shadow: none !important; background: transparent !important; padding: 1rem !important; }
+        body.retailer-mode #modalBody { border: none !important; box-shadow: none !important; background: transparent !important; padding: 1rem !important; margin-top: -50px; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -380,19 +380,21 @@
             const qrInterval = setInterval(() => {
                 const urlParams = new URLSearchParams(window.location.search);
                 const rId = urlParams.get('id');
-                if (rId && window.performanceData && window.performanceData.length > 0) {
-                    clearInterval(qrInterval);
-                    if (window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(rId))) {
-                        // DETECTED RETAILER: TRIGGER DASHBOARD + LOCKDOWN
-                        document.body.classList.add('retailer-mode');
-                        document.getElementById('loginScreen').classList.add('hidden');
-                        document.getElementById('mainApp').classList.remove('hidden');
-                        openDrilldown(rId);
-                        document.getElementById('syncBtnContainer').style.display = 'none';
-                        document.getElementById('adminFilters').style.display = 'none';
+                
+                if (rId) {
+                    // INSTANT BYPASS: Hide login screen immediately if ID is present
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.body.classList.add('retailer-mode');
+                    
+                    if (window.performanceData && window.performanceData.length > 0) {
+                        clearInterval(qrInterval);
+                        if (window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(rId))) {
+                            document.getElementById('mainApp').classList.remove('hidden');
+                            openDrilldown(rId);
+                        }
                     }
                 }
-            }, 500);
+            }, 100); // Faster check interval for instant response
         })();
     </script>
 </body>
