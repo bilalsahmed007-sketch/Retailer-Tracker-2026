@@ -1,160 +1,108 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retailer Tracker - Executive</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f1115; color: #e2e8f0; background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%); background-attachment: fixed; margin: 0; }
-        
-        /* THE "FIX": Ensure everything is hidden until data is ready */
-        #loginScreen { display: flex; }
-        #mainApp, #detailModal, #loadingState { display: none; }
-
-        .glass { background: rgba(30, 35, 45, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; outline: none; color: #f8fafc; }
-        
-        /* RETAILER BYPASS OVERRIDES */
-        body.retailer-mode #loginScreen { display: none !important; }
-        body.retailer-mode #loadingState { display: flex !important; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        
-        body.retailer-mode #detailModal { 
-            display: block !important; 
-            position: fixed !important; 
-            inset: 0 !important; 
-            z-index: 200 !important; 
-            background: #0f1115 !important; 
-        }
-    </style>
-
-    <script>
-        // STEP 1: Check for ID immediately
+<script>
+    // STEP 1: IMMEDIATE INTERCEPTOR (Prevents Login Page from rendering)
+    (function() {
         const urlParams = new URLSearchParams(window.location.search);
         const rId = urlParams.get('id');
         if (rId) {
+            // Add class immediately to HTML to trigger CSS overrides [cite: 13, 14]
             document.documentElement.className = "retailer-mode";
-        }
-    </script>
-</head>
-<body class="p-4 md:p-10 pb-32">
-
-    <div id="loadingState" class="fixed inset-0 z-[1000] bg-[#0f1115] flex items-center justify-center">
-        <div class="text-center">
-            <div class="inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p class="text-slate-400 font-800 uppercase tracking-widest text-xs">Fetching Live Intelligence...</p>
-        </div>
-    </div>
-
-    <div id="loginScreen" class="fixed inset-0 z-[100] bg-[#0f1115] flex items-center justify-center p-6">
-        <div class="w-full max-w-md p-10 rounded-[2rem] bg-[#1a1d23] border border-slate-800 shadow-2xl text-center">
-            <h2 class="text-3xl font-800 text-white italic uppercase mb-8 tracking-tighter">Secure <span class="text-slate-500">Access</span></h2>
-            <div class="space-y-4">
-                <input type="text" id="userInput" placeholder="Identity" class="input-field text-sm font-semibold">
-                <input type="password" id="passInput" placeholder="Passcode" class="input-field text-sm font-semibold">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-800 uppercase text-xs tracking-widest transition-all">Authenticate</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="mainApp" class="max-w-6xl mx-auto">
-        <header class="flex justify-between items-end mb-16">
-            <div>
-                <h1 class="text-4xl md:text-5xl font-800 italic uppercase tracking-tighter text-white">Retailer <span class="text-slate-500">Intelligence</span></h1>
-            </div>
-            <div id="syncBtnContainer" onclick="document.getElementById('fileInput').click()" class="glass px-6 py-4 rounded-2xl cursor-pointer flex items-center gap-4 border border-white/5 transition-all">
-                <span class="text-xs font-bold uppercase text-blue-400 tracking-widest">Sync Dataset</span>
-                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls">
-            </div>
-        </header>
-        <div id="adminFilters" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-            <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs"><option value="">Select Region</option><option value="CPR">CPR</option><option value="NPR">NPR</option><option value="SPR">SPR</option><option value="S&B">S&B</option></select>
-            <select id="areaSelect" onchange="renderTerritoryView()" disabled class="input-field font-bold uppercase text-xs opacity-40"><option value="">Select Area Cluster</option></select>
-        </div>
-        <div id="emptyState" class="h-64 flex items-center justify-center border-2 border-dashed border-slate-800 rounded-[3rem] text-slate-700 font-800 uppercase text-xs tracking-widest">Awaiting Selection</div>
-        <section id="territorySection" class="hidden"><div id="territoryGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div></section>
-        <section id="marketSection" class="hidden"><div id="marketGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div></section>
-        <section id="shopSection" class="hidden"><div id="shopList" class="grid gap-3"></div></section>
-    </div>
-
-    <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115] overflow-y-auto hidden">
-        <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
-        </div>
-    </div>
-
-    <script>
-        const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd";
-        window.performanceData = [];
-
-        window.onload = async () => {
-            await syncFromCloud();
-            lucide.createIcons();
             
-            // Check for bypass after data is loaded
-            const params = new URLSearchParams(window.location.search);
-            const retailerId = params.get('id');
-            
-            if (retailerId) {
-                document.getElementById('loadingState').style.display = 'none';
-                const match = window.performanceData.find(r => String(getExcelVal(r, 'Bizom ID')) === String(retailerId));
-                if (match) {
-                    openDrilldown(retailerId);
-                } else {
-                    document.getElementById('detailModal').classList.remove('hidden');
-                    document.getElementById('modalBody').innerHTML = "<h2 class='text-white text-center'>Retailer ID Not Found</h2>";
-                }
-            }
-        };
-
-        async function syncFromCloud() {
-            try {
-                const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`);
-                const data = await res.json();
-                window.performanceData = JSON.parse(data.files["data.json"].content);
-            } catch (e) { console.error("Sync Failed"); }
+            // Inject a style to force-hide the login screen before it even paints
+            const style = document.createElement('style');
+            style.innerHTML = '#loginScreen { display: none !important; } #loadingState { display: flex !important; }';
+            document.head.appendChild(style);
         }
+    })();
+</script>
 
-        function handleLogin() {
-            if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-            } else { alert("Access Denied"); }
-        }
+<script>
+    const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd";
+    window.performanceData = [];
 
-        function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); }
+    window.onload = async () => {
+        await syncFromCloud();
+        lucide.createIcons();
         
-        function getExcelVal(row, key) { 
-            const target = norm(key); 
-            for (let k in row) { if (norm(k).includes(target)) return row[k]; } 
-            return 0; 
-        }
+        const params = new URLSearchParams(window.location.search);
+        const retailerId = params.get('id');
+        
+        if (retailerId) {
+            // STEP 2: ROBUST DATA MATCHING 
+            // We trim and force string comparison to ensure "127394" matches " 127394 "
+            const cleanId = String(retailerId).trim();
+            const match = window.performanceData.find(r => 
+                String(getExcelVal(r, 'Bizom ID')).trim() === cleanId
+            );
 
-        function openDrilldown(bizId) {
-            const r = window.performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
-            if(!r) return;
-            document.getElementById('detailModal').classList.remove('hidden');
-            document.getElementById('modalBody').innerHTML = `
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-800 text-white italic uppercase mb-2">${getExcelVal(r, 'Shop Name')}</h2>
-                    <div class="text-[10px] font-800 text-slate-500 uppercase tracking-widest">ID: ${bizId}</div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="glass p-6 rounded-3xl text-center"><div class="text-[10px] text-slate-500 uppercase font-800 mb-2">Target</div><div class="text-2xl font-800">${getExcelVal(r, 'Target')}</div></div>
-                    <div class="glass p-6 rounded-3xl text-center"><div class="text-[10px] text-slate-500 uppercase font-800 mb-2">Actual</div><div class="text-2xl font-800 text-emerald-400">${getExcelVal(r, 'Total Sales')}</div></div>
-                </div>
-                <div class="mt-8 p-6 bg-blue-500/10 rounded-3xl border border-blue-500/20 text-center">
-                    <div class="text-[10px] text-blue-400 font-800 uppercase mb-2">Payout Earned</div>
-                    <div class="text-3xl font-800 text-blue-400">Rs. ${getExcelVal(r, 'Total Payout') || 0}</div>
-                </div>
-            `;
+            if (match) {
+                document.getElementById('loadingState').style.display = 'none';
+                openDrilldown(cleanId); [cite: 24, 34]
+            } else {
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('detailModal').classList.remove('hidden'); [cite: 25]
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="text-center py-10">
+                        <h2 class='text-rose-500 font-800 text-xl uppercase'>Retailer ID Not Found</h2>
+                        <p class="text-slate-500 text-xs mt-2">ID ${cleanId} is not in the synced database.</p>
+                    </div>`;
+            }
         }
-    </script>
-</body>
-</html>
+    };
+
+    async function syncFromCloud() {
+        try {
+            const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`); [cite: 27]
+            const data = await res.json(); [cite: 28]
+            window.performanceData = JSON.parse(data.files["data.json"].content); [cite: 28]
+        } catch (e) { 
+            console.error("Sync Failed"); 
+            document.getElementById('loadingState').innerHTML = "<p class='text-rose-500'>Connection Error</p>";
+        }
+    }
+
+    function handleLogin() {
+        if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") { [cite: 29]
+            document.getElementById('loginScreen').style.display = 'none'; [cite: 29]
+            document.getElementById('mainApp').style.display = 'block'; [cite: 30]
+        } else { alert("Access Denied"); }
+    }
+
+    function norm(s) { 
+        return String(s || "").toLowerCase().replace(/\s/g, '').trim(); [cite: 31]
+    }
+    
+    function getExcelVal(row, key) { 
+        const target = norm(key); [cite: 32]
+        for (let k in row) { 
+            if (norm(k).includes(target)) return row[k]; [cite: 32]
+        } 
+        return 0; [cite: 33]
+    }
+
+    function openDrilldown(bizId) {
+        const r = window.performanceData.find(i => String(getExcelVal(i, 'Bizom ID')).trim() === String(bizId).trim()); [cite: 34]
+        if(!r) return;
+        
+        document.getElementById('detailModal').classList.remove('hidden'); [cite: 35]
+        document.getElementById('modalBody').innerHTML = `
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-800 text-white italic uppercase mb-2">${getExcelVal(r, 'Shop Name')}</h2> [cite: 35]
+                <div class="text-[10px] font-800 text-slate-500 uppercase tracking-widest">ID: ${bizId}</div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass p-6 rounded-3xl text-center">
+                    <div class="text-[10px] text-slate-500 uppercase font-800 mb-2">Target</div>
+                    <div class="text-2xl font-800">${getExcelVal(r, 'Target')}</div> [cite: 36]
+                </div>
+                <div class="glass p-6 rounded-3xl text-center">
+                    <div class="text-[10px] text-slate-500 uppercase font-800 mb-2">Actual</div>
+                    <div class="text-2xl font-800 text-emerald-400">${getExcelVal(r, 'Total Sales')}</div> [cite: 36]
+                </div>
+            </div>
+            <div class="mt-8 p-6 bg-blue-500/10 rounded-3xl border border-blue-500/20 text-center">
+                <div class="text-[10px] text-blue-400 font-800 uppercase mb-2">Payout Earned</div>
+                <div class="text-3xl font-800 text-blue-400">Rs. ${getExcelVal(r, 'Total Payout') || 0}</div> [cite: 37, 38]
+            </div>
+        `;
+    }
+</script>
