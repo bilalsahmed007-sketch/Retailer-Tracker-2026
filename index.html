@@ -20,8 +20,9 @@
         .white-card { background: #ffffff; color: #1a1d23; border-radius: 1.5rem; transition: all 0.3s ease; cursor: pointer; }
         .white-card:hover { transform: translateY(-5px); }
 
-        /* RETAILER LOCKDOWN STYLES (Activated via Body Class) */
-        body.retailer-mode { pointer-events: none !important; }
+        /* --- RETAILER LOCKDOWN OVERRIDE --- */
+        body.retailer-mode #loginScreen { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+        body.retailer-mode { pointer-events: none !important; overflow-x: hidden; }
         body.retailer-mode #adminFilters, 
         body.retailer-mode #syncBtnContainer,
         body.retailer-mode [onclick*="location.href"],
@@ -30,7 +31,7 @@
         body.retailer-mode header,
         body.retailer-mode #qr-code-space { display: none !important; }
         body.retailer-mode #detailModal { display: block !important; position: relative !important; z-index: 10 !important; background: transparent !important; }
-        body.retailer-mode #modalBody { border: none !important; box-shadow: none !important; background: transparent !important; padding: 1rem !important; margin-top: -50px; }
+        body.retailer-mode #modalBody { border: none !important; box-shadow: none !important; background: transparent !important; padding: 1rem !important; margin-top: -40px; }
     </style>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -376,25 +377,35 @@
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
         function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
 
+        // --- BYPASS LOGIC ---
         (function() {
-            const qrInterval = setInterval(() => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const rId = urlParams.get('id');
+            const urlParams = new URLSearchParams(window.location.search);
+            const rId = urlParams.get('id');
+            
+            if (rId) {
+                // PHASE 1: Immediate Lockdown (Don't wait for data)
+                document.body.classList.add('retailer-mode');
                 
-                if (rId) {
-                    // INSTANT BYPASS: Hide login screen immediately if ID is present
-                    document.getElementById('loginScreen').classList.add('hidden');
-                    document.body.classList.add('retailer-mode');
-                    
+                // PHASE 2: Wait for data to load then show dashboard
+                const qrInterval = setInterval(() => {
                     if (window.performanceData && window.performanceData.length > 0) {
                         clearInterval(qrInterval);
-                        if (window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(rId))) {
+                        
+                        // Try to find the retailer in the synced data
+                        const found = window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(rId));
+                        
+                        if (found) {
                             document.getElementById('mainApp').classList.remove('hidden');
                             openDrilldown(rId);
+                        } else {
+                            // If ID isn't found, keep it in retailer mode but show an error inside the modal
+                            document.getElementById('mainApp').classList.remove('hidden');
+                            document.getElementById('detailModal').classList.remove('hidden');
+                            document.getElementById('modalBody').innerHTML = `<h2 class="text-center text-white font-800">Retailer ID ${rId} Not Found in Current Dataset.</h2>`;
                         }
                     }
-                }
-            }, 100); // Faster check interval for instant response
+                }, 100);
+            }
         })();
     </script>
 </body>
