@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f1115; color: #e2e8f0; background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%); background-attachment: fixed; }
@@ -20,9 +21,11 @@
         .white-card { background: #ffffff; color: #1a1d23; border-radius: 1.5rem; transition: all 0.3s ease; cursor: pointer; }
         .white-card:hover { transform: translateY(-5px); }
 
-        /* --- RETAILER LOCKDOWN OVERRIDE --- */
-        body.retailer-mode #loginScreen { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+        /* --- PREVENT LOGIN GLIMPSE & FORCE READ-ONLY --- */
+        body:has([id*="id"]) #loginScreen { display: none !important; } /* Modern CSS bypass */
+        
         body.retailer-mode { pointer-events: none !important; overflow-x: hidden; }
+        body.retailer-mode #loginScreen { display: none !important; visibility: hidden !important; }
         body.retailer-mode #adminFilters, 
         body.retailer-mode #syncBtnContainer,
         body.retailer-mode [onclick*="location.href"],
@@ -30,9 +33,32 @@
         body.retailer-mode [onclick*="showMarkets"],
         body.retailer-mode header,
         body.retailer-mode #qr-code-space { display: none !important; }
-        body.retailer-mode #detailModal { display: block !important; position: relative !important; z-index: 10 !important; background: transparent !important; }
-        body.retailer-mode #modalBody { border: none !important; box-shadow: none !important; background: transparent !important; padding: 1rem !important; margin-top: -40px; }
+        
+        /* Force Modal into a "Dashboard Page" view */
+        body.retailer-mode #detailModal { 
+            display: block !important; 
+            position: fixed !important; 
+            inset: 0 !important; 
+            z-index: 200 !important; 
+            background: #0f1115 !important; 
+            overflow-y: auto !important;
+        }
+        body.retailer-mode #modalBody { 
+            border: none !important; 
+            box-shadow: none !important; 
+            background: transparent !important; 
+            padding: 1rem !important; 
+        }
     </style>
+
+    <script>
+        // IMMEDIATE BYPASS: Runs before the body even loads
+        const urlParams = new URLSearchParams(window.location.search);
+        const rId = urlParams.get('id');
+        if (rId) {
+            document.documentElement.classList.add('retailer-mode-active');
+        }
+    </script>
 </head>
 <body class="p-4 md:p-10 pb-32">
 
@@ -136,7 +162,7 @@
                         const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
                             method: 'PATCH',
                             headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ files: { "data.json": { content: JSON.stringify(jsonData, null, 2) } } })
+                            body: JSON.stringify({ files: { \"data.json\": { content: JSON.stringify(jsonData, null, 2) } } })
                         });
 
                         if (response.ok) {
@@ -176,12 +202,10 @@
                     break;
                 }
             } 
-            
             if (target.includes("shopname")) {
                 const s = String(foundVal || "").trim();
                 return (s === "0" || s === "" || s === "null" || s === "undefined") ? "RETAILER" : foundVal;
             }
-            
             return foundVal; 
         }
 
@@ -217,11 +241,9 @@
         function showShops(mName) {
             hideAll(); document.getElementById('shopSection').classList.remove('hidden');
             const shops = window.performanceData.filter(r => norm(getExcelVal(r, 'Market')).includes(norm(mName)));
-            
             const now = new Date();
             const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRemaining = Math.max(1, daysInMonth - now.getDate());
-
             document.getElementById('shopList').innerHTML = shops.map(r => {
                 const target = parseFloat(getExcelVal(r, 'Target')) || 0;
                 const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
@@ -229,7 +251,6 @@
                 const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
                 const isWinner = actual >= target && target > 0;
                 const finalShopTitle = getExcelVal(r, 'Shop Name');
-
                 return `
                 <div onclick="openDrilldown('${bizId}')" class="glass group relative p-5 rounded-[2rem] flex justify-between items-center cursor-pointer mb-4 transition-all duration-300 hover:scale-[1.01] hover:bg-white/5 ${isWinner ? 'status-glow-green' : 'status-glow-red'}">
                     <div class="flex-1">
@@ -267,17 +288,14 @@
         function openDrilldown(bizId) {
             const r = window.performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
             if(!r) return;
-
             const currentBizId = getExcelVal(r, 'Bizom ID');
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
             const finalTitle = getExcelVal(r, 'Shop Name');
-            
             const now = new Date();
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRemaining = Math.max(1, lastDay - now.getDate());
             const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
-
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
                 <div class="text-center mb-8">
@@ -285,87 +303,36 @@
                     <div class="text-[10px] font-800 text-slate-500 uppercase tracking-[0.3em] mb-6">Retailer ID: ${currentBizId}</div>
                     <div id="qr-code-space" class="inline-block p-2 bg-white rounded-2xl shadow-2xl mb-4"></div>
                 </div>
-                
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div class="glass p-5 rounded-[2rem] border border-white/5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i data-lucide="target" class="w-3 h-3 text-slate-500"></i>
-                            <span class="text-[9px] text-slate-500 uppercase font-800">Target</span>
-                        </div>
+                        <div class="flex items-center gap-2 mb-1"><i data-lucide="target" class="w-3 h-3 text-slate-500"></i><span class="text-[9px] text-slate-500 uppercase font-800">Target</span></div>
                         <span class="text-2xl font-800 text-white">${target}</span>
                     </div>
                     <div class="glass p-5 rounded-[2rem] border border-white/5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i data-lucide="trending-up" class="w-3 h-3 text-emerald-500"></i>
-                            <span class="text-[9px] text-slate-500 uppercase font-800">Actual</span>
-                        </div>
+                        <div class="flex items-center gap-2 mb-1"><i data-lucide="trending-up" class="w-3 h-3 text-emerald-500"></i><span class="text-[9px] text-slate-500 uppercase font-800">Actual</span></div>
                         <span class="text-2xl font-800 text-emerald-500">${actual}</span>
                     </div>
                     <div class="glass p-5 rounded-[2rem] border border-white/5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i data-lucide="alert-circle" class="w-3 h-3 text-rose-500"></i>
-                            <span class="text-[9px] text-slate-500 uppercase font-800">Deficit</span>
-                        </div>
+                        <div class="flex items-center gap-2 mb-1"><i data-lucide="alert-circle" class="w-3 h-3 text-rose-500"></i><span class="text-[9px] text-slate-500 uppercase font-800">Deficit</span></div>
                         <span class="text-2xl font-800 text-rose-500">${Math.max(0, (target-actual)).toFixed(0)}</span>
                     </div>
                     <div class="glass p-5 rounded-[2rem] border border-white/5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i data-lucide="wallet" class="w-3 h-3 text-blue-400"></i>
-                            <span class="text-[9px] text-slate-500 uppercase font-800">Payout</span>
-                        </div>
+                        <div class="flex items-center gap-2 mb-1"><i data-lucide="wallet" class="w-3 h-3 text-blue-400"></i><span class="text-[9px] text-slate-500 uppercase font-800">Payout</span></div>
                         <span class="text-2xl font-800 text-blue-400">${getExcelVal(r,'Total Payout') || 0}</span>
                     </div>
                 </div>
-
                 <div class="bg-blue-500/10 border border-blue-500/20 p-5 rounded-[1.5rem] mb-10 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-blue-500/20 rounded-lg animate-pulse">
-                            <i data-lucide="zap" class="w-5 h-5 text-blue-400"></i>
-                        </div>
-                        <span class="text-xs font-800 text-blue-400 uppercase tracking-widest">Required Run Rate</span>
-                    </div>
+                    <div class="flex items-center gap-3"><div class="p-2 bg-blue-500/20 rounded-lg animate-pulse"><i data-lucide="zap" class="w-5 h-5 text-blue-400"></i></div><span class="text-xs font-800 text-blue-400 uppercase tracking-widest">Required Run Rate</span></div>
                     <span class="text-2xl font-800 text-blue-400">${rrr} <small class="text-[10px] opacity-60">/ DAY</small></span>
                 </div>
-
                 <div class="space-y-10">
-                    <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5">
-                        <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Performance Gap Analysis</h3>
-                        <div class="h-48"><canvas id="drillChart"></canvas></div>
-                    </div>
-                    
-                    <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5">
-                        <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Brand Contribution</h3>
-                        <div class="h-48"><canvas id="brandChart"></canvas></div>
-                    </div>
+                    <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5"><h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Performance Gap Analysis</h3><div class="h-48"><canvas id="drillChart"></canvas></div></div>
+                    <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5"><h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Brand Contribution</h3><div class="h-48"><canvas id="brandChart"></canvas></div></div>
                 </div>`;
-
-            new QRCode(document.getElementById("qr-code-space"), { 
-                text: `${window.location.href.split('?')[0]}?id=${currentBizId}`, 
-                width: 110, height: 110 
-            });
-
-            const chartOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { size: 10, weight: '800' } } },
-                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: '800' } } }
-                }
-            };
-
-            new Chart(document.getElementById('drillChart'), { 
-                type: 'bar', 
-                data: { labels: ['TARGET', 'ACTUAL'], datasets: [{ data: [target, actual], backgroundColor: ['rgba(255,255,255,0.05)', '#10b981'], borderRadius: 20, barThickness: 40 }] }, 
-                options: chartOptions
-            });
-
-            new Chart(document.getElementById('brandChart'), { 
-                type: 'bar', 
-                data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [getExcelVal(r,'6mg'),getExcelVal(r,'10mg'),getExcelVal(r,'14mg'),getExcelVal(r,'17mg')], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12, barThickness: 30 }] }, 
-                options: chartOptions
-            });
-
+            new QRCode(document.getElementById("qr-code-space"), { text: `${window.location.href.split('?')[0]}?id=${currentBizId}`, width: 110, height: 110 });
+            const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { size: 10, weight: '800' } } }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: '800' } } } } };
+            new Chart(document.getElementById('drillChart'), { type: 'bar', data: { labels: ['TARGET', 'ACTUAL'], datasets: [{ data: [target, actual], backgroundColor: ['rgba(255,255,255,0.05)', '#10b981'], borderRadius: 20, barThickness: 40 }] }, options: chartOptions });
+            new Chart(document.getElementById('brandChart'), { type: 'bar', data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [getExcelVal(r,'6mg'),getExcelVal(r,'10mg'),getExcelVal(r,'14mg'),getExcelVal(r,'17mg')], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12, barThickness: 30 }] }, options: chartOptions });
             lucide.createIcons();
         }
 
@@ -373,38 +340,31 @@
             const term = document.getElementById('shopSearch').value.toLowerCase();
             Array.from(document.getElementById('shopList').children).forEach(c => c.style.display = c.innerText.toLowerCase().includes(term) ? 'flex' : 'none');
         }
-
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
         function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
 
-        // --- BYPASS LOGIC ---
+        // --- BYPASS ENGINE ---
         (function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const rId = urlParams.get('id');
-            
-            if (rId) {
-                // PHASE 1: Immediate Lockdown (Don't wait for data)
+            const params = new URLSearchParams(window.location.search);
+            const retailerId = params.get('id');
+            if (retailerId) {
+                // FORCE RETAILER MODE CLASS IMMEDIATELY
                 document.body.classList.add('retailer-mode');
                 
-                // PHASE 2: Wait for data to load then show dashboard
-                const qrInterval = setInterval(() => {
+                const checkData = setInterval(() => {
                     if (window.performanceData && window.performanceData.length > 0) {
-                        clearInterval(qrInterval);
-                        
-                        // Try to find the retailer in the synced data
-                        const found = window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(rId));
-                        
-                        if (found) {
+                        clearInterval(checkData);
+                        const match = window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(retailerId));
+                        if (match) {
                             document.getElementById('mainApp').classList.remove('hidden');
-                            openDrilldown(rId);
+                            openDrilldown(retailerId);
                         } else {
-                            // If ID isn't found, keep it in retailer mode but show an error inside the modal
                             document.getElementById('mainApp').classList.remove('hidden');
                             document.getElementById('detailModal').classList.remove('hidden');
-                            document.getElementById('modalBody').innerHTML = `<h2 class="text-center text-white font-800">Retailer ID ${rId} Not Found in Current Dataset.</h2>`;
+                            document.getElementById('modalBody').innerHTML = `<div class="text-center py-20"><h2 class="text-2xl font-800 text-rose-500 uppercase">Retailer Not Found</h2><p class="text-slate-500 mt-4">ID ${retailerId} is not in the active dataset.</p></div>`;
                         }
                     }
-                }, 100);
+                }, 50);
             }
         })();
     </script>
