@@ -297,26 +297,17 @@
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
             const rId = urlParams.get('id');
-            
-            // 1. Hide login screen immediately if ID is present
-            if (rId) {
-                document.getElementById('loginScreen').style.display = 'none';
-            }
-
+            if (rId) { document.getElementById('loginScreen').style.display = 'none'; }
             const qrInterval = setInterval(() => {
                 if (rId && window.performanceData && window.performanceData.length > 0) {
                     clearInterval(qrInterval);
-                    
-                    // 2. Check if the ID exists in the data
-                    const exists = window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(rId));
-                    
-                    if (exists) {
+                    const match = window.performanceData.find(r => String(getExcelVal(r, 'Bizom ID')) === String(rId));
+                    if (match) {
                         document.getElementById('mainApp').classList.remove('hidden');
                         openDrilldown(rId);
                         document.getElementById('syncBtnContainer').style.display = 'none';
                         document.getElementById('adminFilters').style.display = 'none';
                     } else {
-                        // 3. SHOW ERROR IF ID NOT FOUND
                         document.getElementById('mainApp').classList.remove('hidden');
                         document.getElementById('contentRoot').innerHTML = `
                             <div class="p-20 text-center glass rounded-[2rem]">
