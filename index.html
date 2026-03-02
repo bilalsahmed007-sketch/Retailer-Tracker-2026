@@ -150,6 +150,7 @@
         }
 
         function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); }
+        
         function getExcelVal(row, key) { 
             const target = norm(key);
             for (let k in row) { if (norm(k).includes(target)) return row[k]; } 
@@ -189,17 +190,23 @@
             hideAll();
             document.getElementById('shopSection').classList.remove('hidden');
             const shops = window.performanceData.filter(r => norm(getExcelVal(r, 'Market')).includes(norm(mName)));
+            
             const now = new Date();
             const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRemaining = Math.max(1, daysInMonth - now.getDate());
+            
             document.getElementById('shopList').innerHTML = shops.map(r => {
                 const target = parseFloat(getExcelVal(r, 'Target')) || 0;
                 const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
                 const bizId = getExcelVal(r, 'Bizom ID');
                 const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
+                
+                // NEW: Retailer Name logic
                 const rawName = getExcelVal(r, 'Shop Name') || getExcelVal(r, 'Shop') || getExcelVal(r, 'Retailer Name') || getExcelVal(r, 'Outlet');
                 const displayName = (rawName && String(rawName).trim() !== "0") ? rawName : "Retailer";
+                
                 const isWinner = actual >= target && target > 0;
+
                 return `
                 <div onclick="openDrilldown('${bizId}')" class="glass group relative p-5 rounded-[2rem] flex justify-between items-center cursor-pointer mb-4 transition-all duration-300 hover:scale-[1.01] hover:bg-white/5 ${isWinner ? 'status-glow-green' : 'status-glow-red'}">
                     <div class="flex-1">
@@ -237,23 +244,31 @@
         function openDrilldown(bizId) {
             const r = window.performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
             if(!r) return;
+
             const currentBizId = getExcelVal(r, 'Bizom ID');
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
+            
             const rawName = getExcelVal(r, 'Shop Name') || getExcelVal(r, 'Shop') || getExcelVal(r, 'Retailer Name') || getExcelVal(r, 'Outlet');
             const displayName = (rawName && String(rawName).trim() !== "0") ? rawName : "Retailer";
+            
             const now = new Date();
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRemaining = Math.max(1, lastDay - now.getDate());
             const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
-            const brands = ['6mg', '10mg', '14mg', '17mg'];
-            const brandStatusesHtml = brands.map(brand => {
-                const daysVal = parseFloat(getExcelVal(r, `${brand} #Days with Sales`)) || 0;
-                let text = "No Unique", color = "text-rose-500";
-                if (daysVal >= 1 && daysVal <= 3) { text = "Unique"; color = "text-amber-400"; }
-                else if (daysVal >= 4) { text = "Active"; color = "text-emerald-400"; }
-                return `<div class="flex-1 text-center"><div class="${color} text-[7px] font-800 uppercase tracking-tighter">${text}</div></div>`;
-            }).join('');
+
+            // NEW: Brand Status Logic
+            const daysVal = parseFloat(getExcelVal(r, '#Days with Sales')) || 0;
+            let statusText = "No Unique";
+            let statusColor = "text-rose-500";
+            if (daysVal >= 1 && daysVal <= 3) {
+                statusText = "Unique";
+                statusColor = "text-amber-400";
+            } else if (daysVal >= 4) {
+                statusText = "Active";
+                statusColor = "text-emerald-400";
+            }
+
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
                 <div class="text-center mb-8">
@@ -261,40 +276,67 @@
                     <div class="text-[10px] font-800 text-slate-500 uppercase tracking-[0.3em] mb-6">Retailer ID: ${currentBizId}</div>
                     <div id="qr-code-space" class="inline-block p-2 bg-white rounded-2xl shadow-2xl mb-4"></div>
                 </div>
+                
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="glass p-5 rounded-[2rem] border border-white/5 text-center">
-                        <span class="text-[9px] text-slate-500 uppercase font-800 block mb-1">Target</span>
+                    <div class="glass p-5 rounded-[2rem] border border-white/5">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i data-lucide="target" class="w-3 h-3 text-slate-500"></i>
+                            <span class="text-[9px] text-slate-500 uppercase font-800">Target</span>
+                        </div>
                         <span class="text-2xl font-800 text-white">${target}</span>
                     </div>
-                    <div class="glass p-5 rounded-[2rem] border border-white/5 text-center">
-                        <span class="text-[9px] text-slate-500 uppercase font-800 block mb-1">Actual</span>
+                    <div class="glass p-5 rounded-[2rem] border border-white/5">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i data-lucide="trending-up" class="w-3 h-3 text-emerald-500"></i>
+                            <span class="text-[9px] text-slate-500 uppercase font-800">Actual</span>
+                        </div>
                         <span class="text-2xl font-800 text-emerald-500">${actual}</span>
                     </div>
-                    <div class="glass p-5 rounded-[2rem] border border-white/5 text-center">
-                        <span class="text-[9px] text-slate-500 uppercase font-800 block mb-1">Deficit</span>
+                    <div class="glass p-5 rounded-[2rem] border border-white/5">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i data-lucide="alert-circle" class="w-3 h-3 text-rose-500"></i>
+                            <span class="text-[9px] text-slate-500 uppercase font-800">Deficit</span>
+                        </div>
                         <span class="text-2xl font-800 text-rose-500">${Math.max(0, (target-actual)).toFixed(0)}</span>
                     </div>
-                    <div class="glass p-5 rounded-[2rem] border border-white/5 text-center">
-                        <span class="text-[9px] text-slate-500 uppercase font-800 block mb-1">Payout</span>
+                    <div class="glass p-5 rounded-[2rem] border border-white/5">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i data-lucide="wallet" class="w-3 h-3 text-blue-400"></i>
+                            <span class="text-[9px] text-slate-500 uppercase font-800">Payout</span>
+                        </div>
                         <span class="text-2xl font-800 text-blue-400">${getExcelVal(r,'Total Payout') || 0}</span>
                     </div>
                 </div>
+
                 <div class="bg-blue-500/10 border border-blue-500/20 p-5 rounded-[1.5rem] mb-10 flex justify-between items-center">
-                    <div class="flex items-center gap-3"><i data-lucide="zap" class="w-5 h-5 text-blue-400 animate-pulse"></i><span class="text-xs font-800 text-blue-400 uppercase tracking-widest">Required Run Rate</span></div>
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-blue-500/20 rounded-lg animate-pulse">
+                            <i data-lucide="zap" class="w-5 h-5 text-blue-400"></i>
+                        </div>
+                        <span class="text-xs font-800 text-blue-400 uppercase tracking-widest">Required Run Rate</span>
+                    </div>
                     <span class="text-2xl font-800 text-blue-400">${rrr} <small class="text-[10px] opacity-60">/ DAY</small></span>
                 </div>
+
                 <div class="space-y-10">
                     <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5">
                         <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Performance Gap Analysis</h3>
                         <div class="h-48"><canvas id="drillChart"></canvas></div>
                     </div>
-                    <div class="relative glass p-6 rounded-[2.5rem] border border-white/5">
-                        <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Brand Contribution</h3>
+                    
+                    <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest">Brand Contribution</h3>
+                            <span class="text-[10px] font-800 uppercase tracking-widest ${statusColor}">${statusText}</span>
+                        </div>
                         <div class="h-48"><canvas id="brandChart"></canvas></div>
-                        <div class="flex justify-between mt-2 px-2">${brandStatusesHtml}</div>
                     </div>
                 </div>`;
-            new QRCode(document.getElementById("qr-code-space"), { text: `${window.location.href.split('?')[0]}?id=${currentBizId}`, width: 110, height: 110 });
+            
+            new QRCode(document.getElementById("qr-code-space"), { 
+                text: `${window.location.href.split('?')[0]}?id=${currentBizId}`, 
+                width: 110, height: 110 
+            });
             const chartOptions = {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
