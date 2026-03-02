@@ -19,6 +19,8 @@
         #qr-code-space { background: white; padding: 10px; border-radius: 10px; display: inline-block; }
         .white-card { background: #ffffff; color: #1a1d23; border-radius: 1.5rem; transition: all 0.3s ease; cursor: pointer; }
         .white-card:hover { transform: translateY(-5px); }
+        
+        /* Lockdown CSS */
         .retailer-mode #loginScreen, .retailer-mode #syncBtnContainer, .retailer-mode #adminFilters, .retailer-mode #modalCloseContainer, .retailer-mode header, .retailer-mode #contentRoot, .retailer-mode [onclick*="renderTerritoryView"], .retailer-mode [onclick*="showMarkets"] { display: none !important; }
         .retailer-mode #detailModal { background: #0f1115 !important; }
     </style>
@@ -140,7 +142,6 @@
                         if (response.ok) {
                             alert("✅ Success! Data uploaded to cloud.");
                             window.performanceData = jsonData;
-                            // FIXED: Removed location.reload() to stay logged in
                             hideAll();
                             document.getElementById('emptyState').classList.remove('hidden');
                         } else { alert("❌ Sync Failed."); }
@@ -198,9 +199,6 @@
             hideAll();
             document.getElementById('shopSection').classList.remove('hidden');
             const shops = window.performanceData.filter(r => norm(getExcelVal(r, 'Market')).includes(norm(mName)));
-            const now = new Date();
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            const daysRemaining = Math.max(1, lastDay - now.getDate());
             document.getElementById('shopList').innerHTML = shops.map(r => {
                 const target = parseFloat(getExcelVal(r, 'Target')) || 0;
                 const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
