@@ -150,7 +150,6 @@
         }
 
         function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); }
-        
         function getExcelVal(row, key) { 
             const target = norm(key);
             for (let k in row) { if (norm(k).includes(target)) return row[k]; } 
@@ -190,22 +189,17 @@
             hideAll();
             document.getElementById('shopSection').classList.remove('hidden');
             const shops = window.performanceData.filter(r => norm(getExcelVal(r, 'Market')).includes(norm(mName)));
-            
             const now = new Date();
             const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRemaining = Math.max(1, daysInMonth - now.getDate());
-            
             document.getElementById('shopList').innerHTML = shops.map(r => {
                 const target = parseFloat(getExcelVal(r, 'Target')) || 0;
                 const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
                 const bizId = getExcelVal(r, 'Bizom ID');
                 const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
-                
                 const rawName = getExcelVal(r, 'Shop Name') || getExcelVal(r, 'Shop') || getExcelVal(r, 'Retailer Name') || getExcelVal(r, 'Outlet');
                 const displayName = (rawName && String(rawName).trim() !== "0") ? rawName : "Retailer";
-                
                 const isWinner = actual >= target && target > 0;
-
                 return `
                 <div onclick="openDrilldown('${bizId}')" class="glass group relative p-5 rounded-[2rem] flex justify-between items-center cursor-pointer mb-4 transition-all duration-300 hover:scale-[1.01] hover:bg-white/5 ${isWinner ? 'status-glow-green' : 'status-glow-red'}">
                     <div class="flex-1">
@@ -243,20 +237,15 @@
         function openDrilldown(bizId) {
             const r = window.performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
             if(!r) return;
-
             const currentBizId = getExcelVal(r, 'Bizom ID');
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
-            
             const rawName = getExcelVal(r, 'Shop Name') || getExcelVal(r, 'Shop') || getExcelVal(r, 'Retailer Name') || getExcelVal(r, 'Outlet');
             const displayName = (rawName && String(rawName).trim() !== "0") ? rawName : "Retailer";
-            
             const now = new Date();
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRemaining = Math.max(1, lastDay - now.getDate());
             const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
-
-            // Calculation for individual brand statuses
             const brands = ['6mg', '10mg', '14mg', '17mg'];
             const brandStatusesHtml = brands.map(brand => {
                 const daysVal = parseFloat(getExcelVal(r, `${brand} #Days with Sales`)) || 0;
@@ -265,7 +254,6 @@
                 else if (daysVal >= 4) { text = "Active"; color = "text-emerald-400"; }
                 return `<div class="flex-1 text-center"><div class="${color} text-[7px] font-800 uppercase tracking-tighter">${text}</div></div>`;
             }).join('');
-
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
                 <div class="text-center mb-8">
@@ -273,7 +261,6 @@
                     <div class="text-[10px] font-800 text-slate-500 uppercase tracking-[0.3em] mb-6">Retailer ID: ${currentBizId}</div>
                     <div id="qr-code-space" class="inline-block p-2 bg-white rounded-2xl shadow-2xl mb-4"></div>
                 </div>
-                
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <div class="glass p-5 rounded-[2rem] border border-white/5 text-center">
                         <span class="text-[9px] text-slate-500 uppercase font-800 block mb-1">Target</span>
@@ -292,27 +279,22 @@
                         <span class="text-2xl font-800 text-blue-400">${getExcelVal(r,'Total Payout') || 0}</span>
                     </div>
                 </div>
-
                 <div class="bg-blue-500/10 border border-blue-500/20 p-5 rounded-[1.5rem] mb-10 flex justify-between items-center">
                     <div class="flex items-center gap-3"><i data-lucide="zap" class="w-5 h-5 text-blue-400 animate-pulse"></i><span class="text-xs font-800 text-blue-400 uppercase tracking-widest">Required Run Rate</span></div>
                     <span class="text-2xl font-800 text-blue-400">${rrr} <small class="text-[10px] opacity-60">/ DAY</small></span>
                 </div>
-
                 <div class="space-y-10">
                     <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5">
                         <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Performance Gap Analysis</h3>
                         <div class="h-48"><canvas id="drillChart"></canvas></div>
                     </div>
-                    
                     <div class="relative glass p-6 rounded-[2.5rem] border border-white/5">
                         <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Brand Contribution</h3>
                         <div class="h-48"><canvas id="brandChart"></canvas></div>
                         <div class="flex justify-between mt-2 px-2">${brandStatusesHtml}</div>
                     </div>
                 </div>`;
-            
             new QRCode(document.getElementById("qr-code-space"), { text: `${window.location.href.split('?')[0]}?id=${currentBizId}`, width: 110, height: 110 });
-            
             const chartOptions = {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
@@ -321,13 +303,11 @@
                     x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: '800' } } }
                 }
             };
-
             new Chart(document.getElementById('drillChart'), { 
                 type: 'bar', 
                 data: { labels: ['TARGET', 'ACTUAL'], datasets: [{ data: [target, actual], backgroundColor: ['rgba(255,255,255,0.05)', '#10b981'], borderRadius: 20, barThickness: 40 }] }, 
                 options: chartOptions
             });
-
             new Chart(document.getElementById('brandChart'), { 
                 type: 'bar', 
                 data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [getExcelVal(r,'6mg'),getExcelVal(r,'10mg'),getExcelVal(r,'14mg'),getExcelVal(r,'17mg')], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12, barThickness: 30 }] }, 
