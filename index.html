@@ -90,9 +90,8 @@
         const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd";
         window.performanceData = [];
         let currentTerritory = '';
-
         const hierarchyData = {"CPR":{"Lahore":{"Kasur":["Kasur"],"Mughalpura":["Lahore"],"Gulberg":["Lahore"],"DHA":["Lahore"],"Raiwind":["Lahore"],"Shahdara":["Shahdara"],"Samanabad":["Lahore"],"Islampura":["Lahore"],"Railway Station":["Lahore"],"Mall Road":["Lahore"],"Wall City":["Lahore"],"Model Town":["Lahore"],"Township":["Lahore"]},"Faisalabad":{"Jhang":["AP Sial","Jhang"],"Pensera":["AP Banglow","Bhowana","Pensera"],"Rabwah":["Rabwah"],"Faisalabad-A":["Faisalabad"],"Faisalabad-B":["Faisalabad"],"Faisalabad-C":["Faisalabad"],"Toba Tek Singh":["Gojra","Shorkot","Toba Tek Singh"],"Jaranwala":["Jaranwala"],"MoreKhunda":["MoreKhunda"],"Shahkot":["Shahkot"],"Samundri":["Mureedwala","Samundri","Tandlianwala"]},"Gujranwala":{"Sialkot":["Daska","Sialkot"],"Daska":["Daska","Pasrur","Sambrial"],"Narowal":["Narang Mandi","Narowal","Shakargarh","Zafarwal"],"Wazirabad":["Ali Pur Chattha","Qilla Didar Singh","Wazirabad"],"Gujranwala-A":["Gujranwala"],"Gujranwala-B":["Gujranwala","Gujranwala Cantt"],"Hafizabad":["Hafizabad","Nowshera Virkan","Pindi Bhattian"],"Sheikhupura":["Farooqabad","Khanqa Dogran","Sheikhupura"],"Kamoke":["Kamoke","Muridke"]}},"NPR":{"Islamabad":{"Chakwal":["Chakwal"],"Talagang":["Fateh Jang","Talagang"],"Murree":["Gujar Khan","Kahuta","Kallar","Murree"],"Islamabad West":["Islamabad"],"Islamabad Suburb":["Islamabad"],"Islamabad East":["Islamabad"],"Rawalpindi A":["Rawalpindi"],"Rawalpindi B":["Rawalpindi"],"Rawalpindi C":["Rawalpindi"]},"Jhelum":{"Gujrat":["Daulat Nagar","Gujrat","Jalalpur"],"Dinga":["Lalamusa","Phalia"],"Mirpur":["Islamghar","Mirpur"],"Mandibhaudin":["Khewra","Mandi Bahauddin","PDKhan","Pinanwal"],"Jhelum":["Jhelum"]},"Northern Area":{"Abbottabad":["Abbottabad","Haripur"],"Wah":["Attock","Taxila","Wah Cantt"],"Muzaffarabad":["Bagh","Muzaffarabad"],"Mansehra":["Balakot","Besham","Mansehra"],"Rawalakot":["F Kahutta","Hajeera","Rawalakot"],"Gilgit":["Gilgit","Skardu"],"Kotli":["Kotli","Plandri"]},"Peshawar":{"DI Khan":["Bannu","DIKhan","Wana"],"Minghora":["Batkhela","Chitral","Mingora","Timergara"],"Peshawar B":["Charsadda","Peshawar"],"Kohat":["Hangu","Karak","Kohat"],"Mardan":["Mardan","Nowshera","Swabi"],"Peshawar A":["Peshawar"]},"Sargodha":{"Bhalwal":["Bhalwal","Bhera","Kotmomin"],"Mianwali":["Isakhel","Mianwali","Quaidabad","Rangpur"],"Joharabad":["Khushab","Sillanwali"],"Sargodha A":["Sargodha"],"Sargodha B":["Sargodha"]}},"SPR":{"Bahawalpur":{"Khanbela":["AP East","Khanbela"],"Bahawalpur":["Bahawalpur"],"Chishtian":["Chishtian"],"Yazman":["Faqirwali","Yazman"],"Lodhran":["Jalalpur Pirwala","Lodhran"],"RYK":["Rahim Yar Khan"]},"DG Khan":{"Bhakkar":["Bhakkar"],"Layyah":["Layyah"],"Kot Addu":["Chowkmunda","Kot Addu","Taunsa"],"Rajanpur":["Fazilpur","Jampur","Rajanpur","Rojhan"],"Muzaffargarh":["Jatoi","Muzafargarh","Rohilanwali"],"DG Khan":["DG Khan","Kot Chutta","Sakhi Sarwar"]},"Sukkur":{"Khairpur":["Choondko","Gambat","Khairpur Mirs","Pir Jo Goth"],"Jacobabad":["Dera Allah Yar","JACOBABAD","Kandhkot","Kandhkot","Kashmore","Usta Muhammad"],"Ghotki":["Ghotki","Mirpur Mathelo","Rohri","UBARO"],"Sukkur":["Shikarpur","Sukkur","Thull"]},"Sahiwal":{"Sahiwal":["Sahiwal"],"Arifwala":["Arifwala","Bahawalnagar"],"Chichawatni":["Chichawatni","Kamalia"],"Pakpattan":["Depalpur","Minchinabad","Pakpattan","Theeng More"],"Pattoki":["Pattoki","Theeng More"],"Okara":["Okara","Renala Khurd"]},"Multan":{"Burewala":["Burewala","Luddan"],"Dunyapur":["Dunyapur","Mailsi"],"Vehari":["Jahanian","Vehari"],"Kabirwala":["Kabirwala"],"Khanewal":["Khanewal"],"Multan":["Multan"],"Mian Channu":["Mianchanu","Pir Mahal"]}},"S&B":{"Hyderabad":{"Badin Territory":["Badin","Golrachi","Matli","Tando Muhammad Khan"],"Thar Territory":["Digri","Kunri","Naukot","Umerkot"],"Hyderabad Territory":["Hyderabad","Jamshoro","Kotri"],"Mirpurkhas Territory":["Khipro","Mirpurkhas","Tando Allahyar"],"Thatta Territory":["Nooriabad","Thatta"],"TandoAdam Territory":["SP Chakar","Saeedabad","Sanghar","Shahdadpur","Tando Adam"]},"Karachi":{"DHA":["Karachi"],"GIB":["Karachi"],"KBR":["Karachi"],"KRG":["Karachi"],"LDI":["Karachi"],"MLR":["Karachi"],"MTV":["Karachi"],"NKR":["Karachi"],"OLC":["Karachi"]},"Nawabshah":{"Naushero Territory":["Bhiria","Kandiaro","Mehrabpur","Moro","Naushero Feroze","Nawabshah","Qazi Ahmed"],"Dadu Territory":["Dadu","Khairpur Nathan Shah","Mehar","Sann","Sehwan"],"Nawabshah":["Daur","Nawabshah","Qazi Ahmed"],"Nawabshah Territory":["Nawabshah"],"Kamber Territory":["Kamber Ali khan","Naseerabad","Shahdad kot"],"Larkana Territory":["Larkana","Naudero","Ratodero"]},"Quetta":{"Coastal Territory":["Gwadar","Uthal"],"Khuzdar Territory":["Khuzdar","Mastung"],"Lorlai Territory":["Loralai","Qilla Saifullah","ZHOB"],"Quetta B Territory":["Pishin"],"Quetta A Territory":["Quetta"]}}};
-
+        
         window.onload = async () => {
             document.getElementById('topDate').innerText = new Date().toDateString();
             await syncFromCloud();
@@ -119,13 +118,11 @@
                         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                         const token = prompt("File Ready. Enter GitHub Token:");
                         if (!token) return;
-
                         const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
                             method: 'PATCH',
                             headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({ files: { "data.json": { content: JSON.stringify(jsonData, null, 2) } } })
                         });
-
                         if (response.ok) {
                             const btn = document.getElementById('syncBtnContainer');
                             btn.style.borderColor = "#10b981"; 
@@ -153,7 +150,12 @@
         }
 
         function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); }
-        function getExcelVal(row, key) { const target = norm(key); for (let k in row) { if (norm(k).includes(target)) return row[k]; } return 0; }
+        
+        function getExcelVal(row, key) { 
+            const target = norm(key);
+            for (let k in row) { if (norm(k).includes(target)) return row[k]; } 
+            return 0;
+        }
 
         function updateAreas() {
             const reg = document.getElementById('regionSelect').value;
@@ -185,18 +187,24 @@
         }
 
         function showShops(mName) {
-            hideAll(); document.getElementById('shopSection').classList.remove('hidden');
+            hideAll();
+            document.getElementById('shopSection').classList.remove('hidden');
             const shops = window.performanceData.filter(r => norm(getExcelVal(r, 'Market')).includes(norm(mName)));
             
             const now = new Date();
             const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRemaining = Math.max(1, daysInMonth - now.getDate());
-
+            
             document.getElementById('shopList').innerHTML = shops.map(r => {
                 const target = parseFloat(getExcelVal(r, 'Target')) || 0;
                 const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
                 const bizId = getExcelVal(r, 'Bizom ID');
                 const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
+                
+                // NEW: Retailer Name logic
+                const rawName = getExcelVal(r, 'Shop Name') || getExcelVal(r, 'Shop') || getExcelVal(r, 'Retailer Name') || getExcelVal(r, 'Outlet');
+                const displayName = (rawName && String(rawName).trim() !== "0") ? rawName : "Retailer";
+                
                 const isWinner = actual >= target && target > 0;
 
                 return `
@@ -204,7 +212,7 @@
                     <div class="flex-1">
                         <div class="flex items-center gap-3 mb-4">
                             <div class="p-2 bg-indigo-500/10 rounded-lg"><i data-lucide="tag" class="w-4 h-4 text-indigo-400"></i></div>
-                            <h4 class="text-xl font-800 text-white italic uppercase tracking-tighter">${getExcelVal(r, 'Shop Name')}</h4>
+                            <h4 class="text-xl font-800 text-white italic uppercase tracking-tighter">${displayName}</h4>
                         </div>
                         <div class="flex flex-wrap items-center gap-4">
                             <div class="bg-white/5 px-4 py-2 rounded-xl border border-white/5">
@@ -241,15 +249,30 @@
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
             
+            const rawName = getExcelVal(r, 'Shop Name') || getExcelVal(r, 'Shop') || getExcelVal(r, 'Retailer Name') || getExcelVal(r, 'Outlet');
+            const displayName = (rawName && String(rawName).trim() !== "0") ? rawName : "Retailer";
+            
             const now = new Date();
             const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
             const daysRemaining = Math.max(1, lastDay - now.getDate());
             const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
 
+            // NEW: Brand Status Logic
+            const daysVal = parseFloat(getExcelVal(r, '#Days with Sales')) || 0;
+            let statusText = "No Unique";
+            let statusColor = "text-rose-500";
+            if (daysVal >= 1 && daysVal <= 3) {
+                statusText = "Unique";
+                statusColor = "text-amber-400";
+            } else if (daysVal >= 4) {
+                statusText = "Active";
+                statusColor = "text-emerald-400";
+            }
+
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
                 <div class="text-center mb-8">
-                    <h2 class="text-3xl md:text-5xl font-800 text-white italic uppercase mb-2 tracking-tighter">${getExcelVal(r, 'Shop Name')}</h2>
+                    <h2 class="text-3xl md:text-5xl font-800 text-white italic uppercase mb-2 tracking-tighter">${displayName}</h2>
                     <div class="text-[10px] font-800 text-slate-500 uppercase tracking-[0.3em] mb-6">Retailer ID: ${currentBizId}</div>
                     <div id="qr-code-space" class="inline-block p-2 bg-white rounded-2xl shadow-2xl mb-4"></div>
                 </div>
@@ -302,38 +325,36 @@
                     </div>
                     
                     <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5">
-                        <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Brand Contribution</h3>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest">Brand Contribution</h3>
+                            <span class="text-[10px] font-800 uppercase tracking-widest ${statusColor}">${statusText}</span>
+                        </div>
                         <div class="h-48"><canvas id="brandChart"></canvas></div>
                     </div>
                 </div>`;
-
+            
             new QRCode(document.getElementById("qr-code-space"), { 
                 text: `${window.location.href.split('?')[0]}?id=${currentBizId}`, 
                 width: 110, height: 110 
             });
-
             const chartOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
                     y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { size: 10, weight: '800' } } },
                     x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: '800' } } }
                 }
             };
-
             new Chart(document.getElementById('drillChart'), { 
                 type: 'bar', 
                 data: { labels: ['TARGET', 'ACTUAL'], datasets: [{ data: [target, actual], backgroundColor: ['rgba(255,255,255,0.05)', '#10b981'], borderRadius: 20, barThickness: 40 }] }, 
                 options: chartOptions
             });
-
             new Chart(document.getElementById('brandChart'), { 
                 type: 'bar', 
                 data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [getExcelVal(r,'6mg'),getExcelVal(r,'10mg'),getExcelVal(r,'14mg'),getExcelVal(r,'17mg')], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12, barThickness: 30 }] }, 
                 options: chartOptions
             });
-
             lucide.createIcons();
         }
 
