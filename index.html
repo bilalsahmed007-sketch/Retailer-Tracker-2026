@@ -8,39 +8,25 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f1115; color: #e2e8f0; background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%); background-attachment: fixed; margin: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #0f1115; color: #e2e8f0; background-image: linear-gradient(135deg, #0f1115 0%, #1a1d23 100%); background-attachment: fixed; margin: 0; } [cite: 2, 3]
+        #loginScreen { display: flex; } [cite: 3]
+        #mainApp, #detailModal, #loadingState { display: none; } [cite: 4]
+        .glass { background: rgba(30, 35, 45, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); } [cite: 5, 6]
+        .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; outline: none; color: #f8fafc; transition: all 0.2s; } [cite: 6, 7]
+        .input-field:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
         
-        /* THE "FIX": Ensure everything is hidden until data is ready */
-        #loginScreen { display: flex; }
-        #mainApp, #detailModal, #loadingState { display: none; }
-
-        .glass { background: rgba(30, 35, 45, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; outline: none; color: #f8fafc; }
-        
-        /* RETAILER BYPASS OVERRIDES */
-        body.retailer-mode #loginScreen { display: none !important; }
-        body.retailer-mode #loadingState { display: flex !important; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        
-        body.retailer-mode #detailModal { 
-            display: block !important; 
-            position: fixed !important; 
-            inset: 0 !important; 
-            z-index: 200 !important; 
-            background: #0f1115 !important; 
-        }
+        body.retailer-mode #loginScreen { display: none !important; } [cite: 8]
+        body.retailer-mode #loadingState { display: flex !important; flex-direction: column; align-items: center; justify-content: center; height: 100vh; } [cite: 9, 10]
+        body.retailer-mode #detailModal { display: block !important; position: fixed !important; inset: 0 !important; z-index: 200 !important; background: #0f1115 !important; } [cite: 10, 11, 12]
     </style>
 
     <script>
-        // STEP 1: Check for ID immediately
-        const urlParams = new URLSearchParams(window.location.search);
-        const rId = urlParams.get('id');
-        if (rId) {
-            document.documentElement.className = "retailer-mode";
-        }
+        const urlParams = new URLSearchParams(window.location.search); [cite: 12]
+        const rId = urlParams.get('id'); [cite: 13]
+        if (rId) { document.documentElement.className = "retailer-mode"; } [cite: 13, 14]
     </script>
 </head>
 <body class="p-4 md:p-10 pb-32">
@@ -58,102 +44,186 @@
             <div class="space-y-4">
                 <input type="text" id="userInput" placeholder="Identity" class="input-field text-sm font-semibold">
                 <input type="password" id="passInput" placeholder="Passcode" class="input-field text-sm font-semibold">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-800 uppercase text-xs tracking-widest transition-all">Authenticate</button>
+                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-800 uppercase text-xs tracking-widest transition-all">Authenticate</button> [cite: 16]
             </div>
         </div>
     </div>
 
     <div id="mainApp" class="max-w-6xl mx-auto">
-        <header class="flex justify-between items-end mb-16">
+        <header class="flex justify-between items-end mb-12">
             <div>
                 <h1 class="text-4xl md:text-5xl font-800 italic uppercase tracking-tighter text-white">Retailer <span class="text-slate-500">Intelligence</span></h1>
             </div>
-            <div id="syncBtnContainer" onclick="document.getElementById('fileInput').click()" class="glass px-6 py-4 rounded-2xl cursor-pointer flex items-center gap-4 border border-white/5 transition-all">
+            <div onclick="document.getElementById('fileInput').click()" class="glass px-6 py-4 rounded-2xl cursor-pointer flex items-center gap-4 border border-white/5 transition-all hover:bg-white/5">
                 <span class="text-xs font-bold uppercase text-blue-400 tracking-widest">Sync Dataset</span>
-                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls">
+                <input type="file" id="fileInput" class="hidden" accept=".xlsx, .xls"> [cite: 17]
             </div>
         </header>
-        <div id="adminFilters" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-            <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs"><option value="">Select Region</option><option value="CPR">CPR</option><option value="NPR">NPR</option><option value="SPR">SPR</option><option value="S&B">S&B</option></select>
-            <select id="areaSelect" onchange="renderTerritoryView()" disabled class="input-field font-bold uppercase text-xs opacity-40"><option value="">Select Area Cluster</option></select>
+
+        <div id="adminControls" class="space-y-4 mb-12">
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
+                <input type="text" id="shopSearch" oninput="renderTerritoryView()" placeholder="Search by Shop Name or Bizom ID..." class="input-field pl-12 font-semibold text-sm">
+            </div>
+            
+            <div id="adminFilters" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <select id="regionSelect" onchange="updateAreas()" class="input-field font-bold uppercase text-xs">
+                    <option value="">Select Region</option>
+                    <option value="CPR">CPR</option>
+                    <option value="NPR">NPR</option>
+                    <option value="SPR">SPR</option>
+                    <option value="S&B">S&B</option>
+                </select> [cite: 18]
+                <select id="areaSelect" onchange="renderTerritoryView()" disabled class="input-field font-bold uppercase text-xs opacity-40">
+                    <option value="">Select Area Cluster</option>
+                </select> [cite: 18]
+            </div>
         </div>
-        <div id="emptyState" class="h-64 flex items-center justify-center border-2 border-dashed border-slate-800 rounded-[3rem] text-slate-700 font-800 uppercase text-xs tracking-widest">Awaiting Selection</div>
-        <section id="territorySection" class="hidden"><div id="territoryGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div></section>
-        <section id="marketSection" class="hidden"><div id="marketGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div></section>
-        <section id="shopSection" class="hidden"><div id="shopList" class="grid gap-3"></div></section>
+
+        <div id="emptyState" class="h-64 flex items-center justify-center border-2 border-dashed border-slate-800 rounded-[3rem] text-slate-700 font-800 uppercase text-xs tracking-widest">Awaiting Selection</div> [cite: 18]
+        
+        <section id="territorySection" class="hidden">
+            <div id="territoryGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div> [cite: 19]
+        </section>
     </div>
 
     <div id="detailModal" class="fixed inset-0 z-[150] bg-[#0f1115] overflow-y-auto hidden">
         <div class="max-w-5xl mx-auto p-6 md:p-12">
-            <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl"></div>
+            <div id="modalBody" class="bg-[#1a1d23] rounded-[3rem] p-8 md:p-16 border border-slate-800 shadow-2xl relative"></div> [cite: 19]
         </div>
     </div>
 
     <script>
-        const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd";
-        window.performanceData = [];
+        const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd"; [cite: 20]
+        window.performanceData = []; [cite: 20]
 
         window.onload = async () => {
-            await syncFromCloud();
-            lucide.createIcons();
+            await syncFromCloud(); [cite: 20]
+            lucide.createIcons(); [cite: 21]
             
-            // Check for bypass after data is loaded
-            const params = new URLSearchParams(window.location.search);
-            const retailerId = params.get('id');
+            const params = new URLSearchParams(window.location.search); [cite: 21]
+            const retailerId = params.get('id'); [cite: 22]
             
             if (retailerId) {
-                document.getElementById('loadingState').style.display = 'none';
-                const match = window.performanceData.find(r => String(getExcelVal(r, 'Bizom ID')) === String(retailerId));
+                document.getElementById('loadingState').style.display = 'none'; [cite: 22]
+                const match = window.performanceData.find(r => String(getExcelVal(r, 'Bizom ID')) === String(retailerId)); [cite: 23]
                 if (match) {
-                    openDrilldown(retailerId);
+                    openDrilldown(retailerId); [cite: 24]
                 } else {
-                    document.getElementById('detailModal').classList.remove('hidden');
-                    document.getElementById('modalBody').innerHTML = "<h2 class='text-white text-center'>Retailer ID Not Found</h2>";
+                    document.getElementById('detailModal').classList.remove('hidden'); [cite: 25]
+                    document.getElementById('modalBody').innerHTML = "<h2 class='text-white text-center'>Retailer ID Not Found</h2>"; [cite: 26]
                 }
             }
         };
 
         async function syncFromCloud() {
             try {
-                const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`);
-                const data = await res.json();
-                window.performanceData = JSON.parse(data.files["data.json"].content);
-            } catch (e) { console.error("Sync Failed"); }
+                const res = await fetch(`https://api.github.com/gists/${GIST_ID}?nocache=${Date.now()}`); [cite: 27]
+                const data = await res.json(); [cite: 28]
+                window.performanceData = JSON.parse(data.files["data.json"].content); [cite: 28]
+            } catch (e) { console.error("Sync Failed"); } [cite: 28, 29]
         }
 
         function handleLogin() {
-            if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-            } else { alert("Access Denied"); }
+            if(document.getElementById('userInput').value === "admin" && document.getElementById('passInput').value === "51555777") { [cite: 29]
+                document.getElementById('loginScreen').style.display = 'none'; [cite: 29]
+                document.getElementById('mainApp').style.display = 'block'; [cite: 30]
+            } else { alert("Access Denied"); } [cite: 30]
         }
 
-        function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); }
+        function norm(s) { return String(s || "").toLowerCase().replace(/\s/g, '').trim(); } [cite: 30, 31]
         
         function getExcelVal(row, key) { 
-            const target = norm(key); 
-            for (let k in row) { if (norm(k).includes(target)) return row[k]; } 
-            return 0; 
+            const target = norm(key); [cite: 31, 32]
+            for (let k in row) { if (norm(k).includes(target)) return row[k]; } [cite: 32, 33]
+            return 0; [cite: 34]
+        }
+
+        function updateAreas() {
+            const region = document.getElementById('regionSelect').value;
+            const areaSelect = document.getElementById('areaSelect');
+            if (!region) {
+                areaSelect.disabled = true;
+                areaSelect.classList.add('opacity-40');
+                return;
+            }
+            const areas = [...new Set(window.performanceData.filter(r => getExcelVal(r, 'Region') === region).map(r => getExcelVal(r, 'Area Cluster')))].filter(Boolean);
+            areaSelect.innerHTML = '<option value="">All Area Clusters</option>';
+            areas.forEach(a => areaSelect.innerHTML += `<option value="${a}">${a}</option>`);
+            areaSelect.disabled = false;
+            areaSelect.classList.remove('opacity-40');
+            renderTerritoryView();
+        }
+
+        function renderTerritoryView() {
+            const searchTerm = document.getElementById('shopSearch').value.toLowerCase();
+            const region = document.getElementById('regionSelect').value;
+            const area = document.getElementById('areaSelect').value;
+            const grid = document.getElementById('territoryGrid');
+            const empty = document.getElementById('emptyState');
+            const section = document.getElementById('territorySection');
+
+            const filtered = window.performanceData.filter(r => {
+                const name = String(getExcelVal(r, 'Shop Name')).toLowerCase();
+                const id = String(getExcelVal(r, 'Bizom ID')).toLowerCase();
+                return (name.includes(searchTerm) || id.includes(searchTerm)) && (!region || getExcelVal(r, 'Region') === region) && (!area || getExcelVal(r, 'Area Cluster') === area);
+            });
+
+            if (filtered.length > 0) {
+                empty.classList.add('hidden');
+                section.classList.remove('hidden');
+                grid.innerHTML = filtered.map(r => {
+                    const achievement = Math.round((getExcelVal(r, 'Total Sales') / getExcelVal(r, 'Target')) * 100) || 0;
+                    return `
+                        <div onclick="openDrilldown('${getExcelVal(r, 'Bizom ID')}')" class="glass p-6 rounded-[2rem] cursor-pointer hover:border-blue-500/50 transition-all group">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="text-[10px] font-800 text-slate-500 uppercase">${getExcelVal(r, 'Market')}</div>
+                                <div class="text-[10px] font-800 text-blue-400 bg-blue-400/10 px-2 py-1 rounded-lg">ID: ${getExcelVal(r, 'Bizom ID')}</div>
+                            </div>
+                            <div class="text-lg font-800 text-white leading-tight mb-6 group-hover:text-blue-400 transition-colors">${getExcelVal(r, 'Shop Name')}</div>
+                            <div class="flex justify-between items-end border-t border-white/5 pt-4">
+                                <div>
+                                    <div class="text-[10px] text-slate-500 uppercase font-800">Achievement</div>
+                                    <div class="text-xl font-800 ${achievement >= 100 ? 'text-emerald-400' : 'text-amber-400'}">${achievement}%</div>
+                                </div>
+                                <i data-lucide="arrow-up-right" class="text-slate-600 group-hover:text-white"></i>
+                            </div>
+                        </div>`;
+                }).join('');
+                lucide.createIcons();
+            } else { empty.classList.remove('hidden'); section.classList.add('hidden'); }
         }
 
         function openDrilldown(bizId) {
-            const r = window.performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
-            if(!r) return;
-            document.getElementById('detailModal').classList.remove('hidden');
+            const r = window.performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId)); [cite: 34, 35]
+            if(!r) return; [cite: 35]
+            
+            const target = parseFloat(getExcelVal(r, 'Target')) || 0; [cite: 36]
+            const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0; [cite: 36]
+            const payout = getExcelVal(r, 'Total Payout') || 0; [cite: 38]
+            const achievement = target > 0 ? Math.min(Math.round((actual / target) * 100), 100) : 0;
+
+            document.getElementById('detailModal').classList.remove('hidden'); [cite: 35]
             document.getElementById('modalBody').innerHTML = `
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-800 text-white italic uppercase mb-2">${getExcelVal(r, 'Shop Name')}</h2>
-                    <div class="text-[10px] font-800 text-slate-500 uppercase tracking-widest">ID: ${bizId}</div>
+                <button onclick="document.getElementById('detailModal').classList.add('hidden')" class="absolute top-8 right-8 p-3 bg-white/5 hover:bg-white/10 rounded-full transition-colors"><i data-lucide="x" class="text-white w-6 h-6"></i></button>
+                <div class="mb-10 text-center md:text-left">
+                    <h2 class="text-4xl font-800 text-white italic uppercase tracking-tighter">${getExcelVal(r, 'Shop Name')}</h2> [cite: 35]
+                    <p class="text-slate-500 font-bold text-xs uppercase tracking-widest mt-1">Market: ${getExcelVal(r, 'Market')} | ID: ${bizId}</p> [cite: 35]
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="glass p-6 rounded-3xl text-center"><div class="text-[10px] text-slate-500 uppercase font-800 mb-2">Target</div><div class="text-2xl font-800">${getExcelVal(r, 'Target')}</div></div>
-                    <div class="glass p-6 rounded-3xl text-center"><div class="text-[10px] text-slate-500 uppercase font-800 mb-2">Actual</div><div class="text-2xl font-800 text-emerald-400">${getExcelVal(r, 'Total Sales')}</div></div>
+                <div class="mb-10">
+                    <div class="flex justify-between items-end mb-3"><span class="text-[10px] font-800 text-slate-400 uppercase tracking-widest">Target Achievement</span><span class="text-2xl font-800 ${achievement >= 100 ? 'text-emerald-400' : 'text-blue-400'}">${achievement}%</span></div>
+                    <div class="w-full h-4 bg-slate-800 rounded-full overflow-hidden"><div class="h-full ${achievement >= 100 ? 'bg-emerald-500' : 'bg-blue-500'} transition-all duration-1000" style="width: ${achievement}%"></div></div>
                 </div>
-                <div class="mt-8 p-6 bg-blue-500/10 rounded-3xl border border-blue-500/20 text-center">
-                    <div class="text-[10px] text-blue-400 font-800 uppercase mb-2">Payout Earned</div>
-                    <div class="text-3xl font-800 text-blue-400">Rs. ${getExcelVal(r, 'Total Payout') || 0}</div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="glass p-6 rounded-[2rem] text-center"><div class="text-[10px] text-slate-500 uppercase font-800 mb-1">Target</div><div class="text-2xl font-800 text-white">Rs. ${target.toLocaleString()}</div></div> [cite: 36]
+                    <div class="glass p-6 rounded-[2rem] text-center"><div class="text-[10px] text-slate-500 uppercase font-800 mb-1">Actual</div><div class="text-2xl font-800 text-emerald-400">Rs. ${actual.toLocaleString()}</div></div> [cite: 36]
+                    <div class="glass p-6 rounded-[2rem] text-center"><div class="text-[10px] text-slate-500 uppercase font-800 mb-1">Gap</div><div class="text-2xl font-800 ${target-actual <= 0 ? 'text-emerald-500' : 'text-rose-400'}">${target-actual <= 0 ? 'Achieved' : 'Rs. '+(target-actual).toLocaleString()}</div></div>
                 </div>
-            `;
+                <div class="p-8 bg-blue-600 rounded-[2.5rem] shadow-[0_20px_50px_rgba(37,99,235,0.3)] text-center">
+                    <div class="text-[10px] text-blue-100 font-800 uppercase tracking-widest mb-2">Estimated Payout</div>
+                    <div class="text-5xl font-800 text-white tracking-tighter">Rs. ${payout.toLocaleString()}</div> [cite: 37, 38]
+                </div>`;
+            lucide.createIcons();
         }
     </script>
 </body>
