@@ -19,7 +19,9 @@
         #qr-code-space { background: white; padding: 10px; border-radius: 10px; display: inline-block; }
         .white-card { background: #ffffff; color: #1a1d23; border-radius: 1.5rem; transition: all 0.3s ease; cursor: pointer; }
         .white-card:hover { transform: translateY(-5px); }
-        /* Lockdown CSS */
+        
+        /* Lockdown CSS: Hidden by default if retailer-mode is active */
+        .retailer-mode #loginScreen,
         .retailer-mode #syncBtnContainer, 
         .retailer-mode #adminFilters, 
         .retailer-mode #modalCloseContainer,
@@ -94,6 +96,14 @@
     </div>
 
     <script>
+        // 1. Immediate Lockdown Check (Bypasses login rendering)
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('id')) {
+                document.documentElement.classList.add('retailer-mode');
+            }
+        })();
+
         const GIST_ID = "2f31d97be896afbdb99de57d7a2b8dfd";
         window.performanceData = [];
         let currentTerritory = '';
@@ -104,6 +114,18 @@
             await syncFromCloud();
             lucide.createIcons();
             initSyncLogic();
+
+            // 2. Retailer Verification after Data Sync
+            const urlParams = new URLSearchParams(window.location.search);
+            const rId = urlParams.get('id');
+            if (rId && window.performanceData.length > 0) {
+                if (window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(rId))) {
+                    document.body.classList.add('retailer-mode');
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    openDrilldown(rId);
+                }
+            }
         };
 
         async function syncFromCloud() {
@@ -330,23 +352,6 @@
 
         function closeModal() { document.getElementById('detailModal').classList.add('hidden'); }
         function hideAll() { ['emptyState', 'territorySection', 'marketSection', 'shopSection'].forEach(id => document.getElementById(id).classList.add('hidden')); }
-
-        (function() {
-            const qrInterval = setInterval(() => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const rId = urlParams.get('id');
-                if (rId && window.performanceData && window.performanceData.length > 0) {
-                    clearInterval(qrInterval);
-                    if (window.performanceData.some(r => String(getExcelVal(r, 'Bizom ID')) === String(rId))) {
-                        // Lockdown Mode Activated
-                        document.body.classList.add('retailer-mode');
-                        document.getElementById('loginScreen').classList.add('hidden');
-                        document.getElementById('mainApp').classList.remove('hidden');
-                        openDrilldown(rId);
-                    }
-                }
-            }, 500);
-        })();
     </script>
 </body>
 </html>
