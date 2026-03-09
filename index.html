@@ -16,7 +16,7 @@
         .input-field { background: #1e232d; border: 1px solid #334155; border-radius: 1rem; padding: 1.15rem; width: 100%; outline: none; color: #f8fafc; }
         .status-glow-red { border-left: 6px solid #ef4444 !important; box-shadow: -10px 0 20px -10px rgba(239, 68, 68, 0.2); }
         .status-glow-green { border-left: 6px solid #10b981 !important; box-shadow: -10px 0 20px -10px rgba(16, 185, 129, 0.2); }
-        #qr-code-space { background: white; padding: 10px; border-radius: 10px; display: inline-block; }
+        #qr-code-space { background: white; padding: 10px; border-radius: 10px; display: inline-block; margin-top: 10px; }
         .white-card { background: #ffffff; color: #1a1d23; border-radius: 1.5rem; transition: all 0.3s ease; cursor: pointer; }
         .white-card:hover { transform: translateY(-5px); }
     </style>
@@ -236,104 +236,24 @@
         function openDrilldown(bizId) {
             const r = window.performanceData.find(i => String(getExcelVal(i, 'Bizom ID')) === String(bizId));
             if(!r) return;
-
-            const currentBizId = getExcelVal(r, 'Bizom ID');
             const target = parseFloat(getExcelVal(r, 'Target')) || 0;
             const actual = parseFloat(getExcelVal(r, 'Total Sales')) || 0;
-            
-            const now = new Date();
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            const daysRemaining = Math.max(1, lastDay - now.getDate());
-            const rrr = Math.max(0, (target - actual) / daysRemaining).toFixed(1);
-
             document.getElementById('detailModal').classList.remove('hidden');
             document.getElementById('modalBody').innerHTML = `
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl md:text-5xl font-800 text-white italic uppercase mb-2 tracking-tighter">${getExcelVal(r, 'Shop Name')}</h2>
-                    <div class="text-[10px] font-800 text-slate-500 uppercase tracking-[0.3em] mb-6">Retailer ID: ${currentBizId}</div>
-                    <div id="qr-code-space" class="inline-block p-2 bg-white rounded-2xl shadow-2xl mb-4"></div>
+                <div class="text-center mb-10"><h2 class="text-4xl md:text-5xl font-800 text-white italic uppercase mb-2">${getExcelVal(r, 'Shop Name')}</h2><div id="qr-code-space"></div></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center font-800"><span class="text-[9px] text-slate-500 uppercase block">Target</span>${target}</div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center font-800"><span class="text-[9px] text-slate-500 uppercase block">Actual</span><span class="text-emerald-500">${actual}</span></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center font-800"><span class="text-[9px] text-slate-500 uppercase block">Deficit</span><span class="text-rose-500">${(target-actual).toFixed(0)}</span></div>
+                    <div class="bg-[#111419] p-6 rounded-3xl text-center font-800"><span class="text-[9px] text-slate-500 uppercase block">Payout</span><span class="text-blue-400">${getExcelVal(r,'Total Payout') || 0}</span></div>
                 </div>
-                
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div class="glass p-5 rounded-[2rem] border border-white/5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i data-lucide="target" class="w-3 h-3 text-slate-500"></i>
-                            <span class="text-[9px] text-slate-500 uppercase font-800">Target</span>
-                        </div>
-                        <span class="text-2xl font-800 text-white">${target}</span>
-                    </div>
-                    <div class="glass p-5 rounded-[2rem] border border-white/5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i data-lucide="trending-up" class="w-3 h-3 text-emerald-500"></i>
-                            <span class="text-[9px] text-slate-500 uppercase font-800">Actual</span>
-                        </div>
-                        <span class="text-2xl font-800 text-emerald-500">${actual}</span>
-                    </div>
-                    <div class="glass p-5 rounded-[2rem] border border-white/5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i data-lucide="alert-circle" class="w-3 h-3 text-rose-500"></i>
-                            <span class="text-[9px] text-slate-500 uppercase font-800">Deficit</span>
-                        </div>
-                        <span class="text-2xl font-800 text-rose-500">${Math.max(0, (target-actual)).toFixed(0)}</span>
-                    </div>
-                    <div class="glass p-5 rounded-[2rem] border border-white/5">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i data-lucide="wallet" class="w-3 h-3 text-blue-400"></i>
-                            <span class="text-[9px] text-slate-500 uppercase font-800">Payout</span>
-                        </div>
-                        <span class="text-2xl font-800 text-blue-400">${getExcelVal(r,'Total Payout') || 0}</span>
-                    </div>
-                </div>
-
-                <div class="bg-blue-500/10 border border-blue-500/20 p-5 rounded-[1.5rem] mb-10 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 bg-blue-500/20 rounded-lg animate-pulse">
-                            <i data-lucide="zap" class="w-5 h-5 text-blue-400"></i>
-                        </div>
-                        <span class="text-xs font-800 text-blue-400 uppercase tracking-widest">Required Run Rate</span>
-                    </div>
-                    <span class="text-2xl font-800 text-blue-400">${rrr} <small class="text-[10px] opacity-60">/ DAY</small></span>
-                </div>
-
-                <div class="space-y-10">
-                    <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5">
-                        <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Performance Gap Analysis</h3>
-                        <div class="h-48"><canvas id="drillChart"></canvas></div>
-                    </div>
-                    
-                    <div class="relative h-72 glass p-6 rounded-[2.5rem] border border-white/5">
-                        <h3 class="text-[10px] font-800 text-slate-500 uppercase tracking-widest mb-4">Brand Contribution</h3>
-                        <div class="h-48"><canvas id="brandChart"></canvas></div>
-                    </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 h-64">
+                    <canvas id="drillChart"></canvas>
+                    <canvas id="brandChart"></canvas>
                 </div>`;
-
-            new QRCode(document.getElementById("qr-code-space"), { 
-                text: `${window.location.href.split('?')[0]}?id=${currentBizId}`, 
-                width: 110, height: 110 
-            });
-
-            const chartOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { size: 10, weight: '800' } } },
-                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: '800' } } }
-                }
-            };
-
-            new Chart(document.getElementById('drillChart'), { 
-                type: 'bar', 
-                data: { labels: ['TARGET', 'ACTUAL'], datasets: [{ data: [target, actual], backgroundColor: ['rgba(255,255,255,0.05)', '#10b981'], borderRadius: 20, barThickness: 40 }] }, 
-                options: chartOptions
-            });
-
-            new Chart(document.getElementById('brandChart'), { 
-                type: 'bar', 
-                data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [getExcelVal(r,'6mg'),getExcelVal(r,'10mg'),getExcelVal(r,'14mg'),getExcelVal(r,'17mg')], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12, barThickness: 30 }] }, 
-                options: chartOptions
-            });
-
+            new QRCode(document.getElementById("qr-code-space"), { text: `${window.location.href.split('?')[0]}?id=${bizId}`, width: 100, height: 100 });
+            new Chart(document.getElementById('drillChart'), { type: 'bar', data: { labels: ['TGT', 'ACT'], datasets: [{ data: [target, actual], backgroundColor: ['#1e232d', '#10b981'], borderRadius: 12 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            new Chart(document.getElementById('brandChart'), { type: 'bar', data: { labels: ['6mg','10mg','14mg','17mg'], datasets: [{ data: [getExcelVal(r,'6mg'),getExcelVal(r,'10mg'),getExcelVal(r,'14mg'),getExcelVal(r,'17mg')], backgroundColor: ['#10b981','#3b82f6','#f59e0b','#ef4444'], borderRadius: 12 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
             lucide.createIcons();
         }
 
